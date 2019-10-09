@@ -1,5 +1,6 @@
 
 1. only functions can be void
 2. we can't parse "-func()" but we can parse "0-func()"
+3. we can't parse <condition> like "true"
 
 /!!\ error rule 34 with rule 45
