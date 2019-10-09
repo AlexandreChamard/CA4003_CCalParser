@@ -1,3 +1,5 @@
 
 1. only functions can be void
 2. we can't parse "-func()" but we can parse "0-func()"
+
+/!!\ error rule 34 with rule 45
