@@ -1,0 +1,60 @@
+<program>           ::=     <decl_list> <function_list> <main>
+<decl_list>         ::=     <decl> ; <decl_list>
+                            ɛ
+<decl>              ::=     <var_decl>
+                            <const_decl>
+<var_decl>          ::=     var identifier : <type>
+<const_decl>        ::=     const identifier : <type> = <expression>
+<function_list>     ::=     <function> <function_list>
+                            ɛ
+<function>          ::=     <type> identifier ( <parameter_list> ) { <decl_list> <statement_block> return ( <expression> ) ; }
+                            void identifier ( <parameter_list> ) { <decl_list> <statement_block> return (  ) ; }
+<main>              ::=     main { <decl_list> <statement_block> }
+<parameter_list>    ::=     <nemp_parameter_list>
+                            ɛ
+<nemp_parameter_list>   ::= identifier : <type> <nemp_parameter_list2>
+<nemp_parameter_list2>  ::= , <nemp_parameter_list>
+                            ɛ
+<statement_block>   ::=     <statement> <statement_block>
+                            ɛ
+<statement>         ::=     identifier <statement2>
+                            { <statement_block> } 
+                            if <condition> { <statement_block> } else { <statement_block> }
+                            while <condition> { <statement_block> }
+                            skip ;
+<statement2>        ::=  =  <expression> ;
+                            ( <arg_list> ) ;
+                            ɛ
+<arg_list>          ::=     <nemp_arg_list>
+                            ɛ
+<nemp_arg_list>     ::=     identifier <nemp_arg_list2>
+<nemp_arg_list2>    ::=     , <nemp_arg_list>
+                            ɛ
+<expression>        ::=     <fragment> <expression2>
+                            ( <expression> ) <expression2>
+<expression2>       ::=     <binary_arith_op> <expression>
+                            ɛ
+<fragment>          ::=     identifier <fragment2>
+                            - identifier
+                            number
+                            true
+                            false
+<fragment2>         ::=     ( <arg_list> )
+                            ɛ
+<condition>         ::=     ~ <condition> <condition2>
+                            ( <condition> ) <condition2>
+                            <expression> <comp_op> <expression> <condition2>
+<condition2>        ::=     <cond_op> <condition>
+                            ɛ
+<type>              ::=     integer
+                            boolean
+<binary_arith_op>   ::=     +
+                            -
+<cond_op>           ::=     ||
+                            &&
+<comp_op>           ::=     ==
+                            !=
+                            <
+                            <= 
+                            >
+                            >=
