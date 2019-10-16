@@ -1,0 +1,230 @@
+
+options
+{
+IGNORE_CASE = true;
+}
+
+PARSER_BEGIN(SyntaxChecker)
+
+interface ENode {
+    String toString();
+}
+
+class BinaryExpr implements ENode {
+    private String type;
+    private ENode e1, e2;
+
+    BinaryExpr(String _type, ENode _e1, ENode _e2) {
+        type = _type;
+        e1 = _e1;
+        e2 = _e2;
+    }
+
+    public String toString() {
+        return type+"("+e1.toString()+", "+e2.toString()+")";
+    }
+}
+
+class Num implements ENode {
+    private String i;
+
+    public Num(String _i) {
+        i = _i;
+    }
+
+    public String toString() {
+        return i;
+    }
+}
+
+class Identifier implements ENode {
+    private String id;
+
+    Identifier(String _id) {
+        id = _id;
+    }
+
+    public String toString() {
+        return "id("+id+")";
+    }
+}
+
+class UnaryNot implements ENode {
+    private ENode e;
+
+    UnaryNot(ENode _e) {
+        e = _e;
+    }
+
+    public String toString() {
+        return "~("+e+")";
+    }
+}
+
+class UnaryExpr implements ENode {
+    private ENode e;
+
+    UnaryExpr(ENode _e) {
+        e = _e;
+    }
+
+    public String toString() {
+        return "-("+e+")";
+    }
+}
+
+class BoolLit implements ENode {
+    private boolean b;
+
+    BoolLit(boolean _b) {
+        b = _b;
+    }
+
+    public String toString() {
+        return Boolean.toString(b);
+    }
+}
+
+public class SyntaxChecker {
+    public static void main(String[] args) {
+        try {
+            ENode e = new SyntaxChecker(new java.io.StringReader(args[0])).S();
+            System.out.println(e.toString());
+            System.out.println("Syntax is okay");
+        } catch (Throwable e) {
+            // Catching Throwable is ugly but JavaCC throws Error objects!
+            System.out.println("Syntax check failed: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+}
+
+PARSER_END(SyntaxChecker)
+
+TOKEN_MGR_DECLS : {
+    static int commentNesting = 0;
+}
+
+SKIP : {
+    " "
+|   "\t"
+|   "\n"
+|   "\r"
+|   <"//" (~["\n", "\r"])*>
+|   "/*" { ++commentNesting; } : IN_COMMENT
+}
+
+<IN_COMMENT> SKIP : {
+    "/*" { ++commentNesting; }
+|   "*/" { --commentNesting; if (commentNesting == 0) SwitchTo(DEFAULT); }
+|   <~[]>
+}
+
+TOKEN: {
+    <LP: "("> | <RP: ")">
+|   <LB: "{"> | <RB: "}">
+|   <ADD_OP: "+">
+|   <SUB_OP: "-">
+|   <COMP_OP: "==" | "!=" | "<" | "<=" | ">" | ">=">
+|   <BOOL_OP: "&&" | "||">
+|   <NOT_OP: "~">
+|   <EQ_OP: "=">
+|   <COL: ":">
+|   <SEMIC: ";">
+|   <BOOL_LIT:"true" | "false">
+|   <VAR_MOD: "var" | "const">
+|   <VOID: "void">
+|   <VAR_TYPE: "boolean" | "integer">
+|   <MAIN: "main">
+|   <IF: "if">
+|   <ELSE: "else">
+|   <WHILE: "while">
+|   <SK: "skip">
+|   <RET: "return">
+|   <NUM: (["1"-"9"] (["0"-"9"])* | "0")>
+|   <IDENTIFIER: ["a"-"z"] (["a"-"z"] | ["0"-"9"] | "_")*>
+}
+
+ENode S(): {
+    ENode e;
+}
+{
+    e = Condition() <EOF> { return e; }
+}
+
+ENode Condition(): {
+    ENode e1, e2;
+}
+{
+    e1 = Condition1() e2 = Condition_(e1) { return e2; }
+}
+
+ENode Condition1(): {
+    ENode e1;
+}
+{
+    <NOT_OP> e1 = Comparison() { return new UnaryNot(e1); }
+|    e1 = Comparison() { return e1; }
+}
+
+ENode Condition_(ENode e1): {
+    Token t;
+    ENode e2, ef;
+}
+{
+    t = <BOOL_OP> e2 = Comparison() ef = Condition_(new BinaryExpr(t.toString(), e1, e2)) { return ef; }
+|   { return e1; }
+}
+
+
+ENode Comparison(): {
+    ENode e1, e2;
+}
+{
+    e1 = Expression() e2 = Comparison_(e1) { return e2; }
+}
+
+ENode Comparison_(ENode e1): {
+    Token t;
+    ENode e2, ef;
+}
+{
+    t = <COMP_OP> e2 = Expression() ef = Comparison_(new BinaryExpr(t.toString(), e1, e2)) { return ef; }
+|   { return e1; }
+}
+
+ENode Expression(): {
+    ENode e1, e2;
+}
+{
+    e1 = Fragment() e2 = Expression_(e1) { return e2; }
+}
+
+ENode Expression_(ENode e1): {
+    ENode e2, ef;
+}
+{
+    <ADD_OP> e2 = Fragment() ef = Expression_(new BinaryExpr("+", e1, e2)) { return ef;}
+|   <SUB_OP> e2 = Fragment() ef = Expression_(new BinaryExpr("-", e1, e2)) { return ef;}
+|   { return e1; }
+}
+
+ENode Fragment(): {
+    Token t;
+    ENode e;
+}
+{
+    t = <IDENTIFIER>            { return new Identifier(t.toString()); }
+|   <SUB_OP> e = SubFragment()  { return e; }
+|   t = <NUM>                   { return new Num(t.toString()); }
+|   t = <BOOL_LIT>              { return new BoolLit(t.toString().equals("true")); }
+|   <LP> e = Expression() <RP>  { return e; }
+}
+
+ENode SubFragment(): {
+    Token t;
+}
+{
+    t = <IDENTIFIER>            { return new UnaryExpr(new Identifier(t.toString())); }
+|   t = <NUM>                   { return new UnaryExpr(new Num(t.toString())); }
+}
