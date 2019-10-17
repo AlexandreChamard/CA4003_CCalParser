@@ -6,29 +6,78 @@ IGNORE_CASE = true;
 
 PARSER_BEGIN(SyntaxChecker)
 
-enum Level {
+import java.util.ArrayList;
+
+interface Show {
+    String toString();
+}
+
+
+enum Type {
+    INVALID,
     VOID,
     INTEGER,
     BOOLEAN
 }
 
-
-interface ENode {
-    String toString();
-}
-
 interface Typeable {
-
+    Type getType();
+    ArrayList<Type> getComplexType();
+    boolean isLit();
 }
 
-class BinaryExpr implements ENode {
+
+abstract class ENode implements Show, Typeable {
+    public ArrayList<Type> getComplexType() { return new ArrayList(); }
+    public boolean isLit() { return false; }
+
+    public void checkValidity() throws ParseException {
+        if (getType() == Type.INVALID)
+            throw new ParseException("some types is invalid.");
+    }
+}
+
+class BinaryExpr extends ENode {
     private String type;
     private ENode e1, e2;
 
-    BinaryExpr(String _type, ENode _e1, ENode _e2) {
+    BinaryExpr(String _type, ENode _e1, ENode _e2) throws ParseException {
         type = _type;
         e1 = _e1;
         e2 = _e2;
+        checkValidity();
+    }
+
+    public Type getType() {
+        Type t1 = e1.getType(), t2 = e2.getType();
+
+        if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
+            return t1;
+
+        switch (type) {
+            case "&&":
+            case "||":
+                if (t1 == Type.BOOLEAN && t1 == t2)
+                    return Type.BOOLEAN;
+                return Type.INVALID;
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+            case "+":
+            case "-":
+                if (t1 == Type.INTEGER && t1 == t2)
+                    return Type.INTEGER;
+                return Type.INVALID;
+            case "==":
+            case "!=":
+            case "=":
+                if (t1 == t2)
+                    return t1;
+                return Type.INVALID;
+            default:
+                return t2;
+        }
     }
 
     public String toString() {
@@ -36,11 +85,15 @@ class BinaryExpr implements ENode {
     }
 }
 
-class Num implements ENode {
+class Num extends ENode {
     private String i;
 
     public Num(String _i) {
         i = _i;
+    }
+
+    public Type getType() {
+        return Type.INTEGER;
     }
 
     public String toString() {
@@ -48,11 +101,16 @@ class Num implements ENode {
     }
 }
 
-class Identifier implements ENode {
+class Identifier extends ENode {
     private Token id;
 
     Identifier(Token _id) {
         id = _id;
+    }
+
+    public Type getType() {
+        /** check in identifier hashtable */
+        return Type.VOID;
     }
 
     public String toString() {
@@ -60,11 +118,18 @@ class Identifier implements ENode {
     }
 }
 
-class UnaryNot implements ENode {
+class UnaryNot extends ENode {
     private ENode e;
 
-    UnaryNot(ENode _e) {
+    UnaryNot(ENode _e) throws ParseException {
         e = _e;
+        checkValidity();
+    }
+
+    public Type getType() {
+        if (e.getType() == Type.BOOLEAN)
+            return  Type.BOOLEAN;
+        return Type.INVALID;
     }
 
     public String toString() {
@@ -72,11 +137,18 @@ class UnaryNot implements ENode {
     }
 }
 
-class UnaryExpr implements ENode {
+class UnaryExpr extends ENode {
     private ENode e;
 
-    UnaryExpr(ENode _e) {
+    UnaryExpr(ENode _e) throws ParseException {
         e = _e;
+        checkValidity();
+    }
+
+    public Type getType() {
+        if (e.getType() == Type.INTEGER)
+            return  Type.INTEGER;
+        return Type.INVALID;
     }
 
     public String toString() {
@@ -84,11 +156,15 @@ class UnaryExpr implements ENode {
     }
 }
 
-class BoolLit implements ENode {
+class BoolLit extends ENode {
     private boolean b;
 
     BoolLit(boolean _b) {
         b = _b;
+    }
+
+    public Type getType() {
+        return Type.BOOLEAN;
     }
 
     public String toString() {
