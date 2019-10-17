@@ -16,8 +16,8 @@ function test() {
     echo 
     echo "============================"
     echo 
-    echo "test${n}:"
-    ${call} $(< ${filename}) > ${file} && diff -w ${file} ${testfile}
+    echo "test${n}: " ${filename}
+    ${call} ${filename} > ${file} && diff -w ${file} ${testfile}
     if [[ ${?} != 0 && "$(< ${testfile})" != "error" ]];then
         i=$((i + 1))
         echo -e "\e[31mERROR\e[0m"
