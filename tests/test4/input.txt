@@ -1,1 +1,2 @@
+// negative number -42
 -42

@@ -1,1 +1,2 @@
+// invalid negative number (begin with 0)
 -042
