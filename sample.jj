@@ -123,10 +123,10 @@ public class SyntaxChecker {
         }
 
         try {
-            ENode e = parser.S();
+            ENode e = parser.Program();
             System.out.println(e.toString());
             System.out.println("Syntax is okay");
-        } catch (ParseException e) {
+        } catch (Throwable e) {
             System.out.println("Syntax check failed: " + e.getMessage());
             System.exit(1);
         }
@@ -163,7 +163,8 @@ TOKEN: {
 |   <LB: "{"> | <RB: "}">
 |   <ADD_OP: "+">
 |   <SUB_OP: "-">
-|   <COMP_OP: "==" | "!=" | "<" | "<=" | ">" | ">=">
+|   <COMP_OP: "==" | "!=">
+|   <COMP_NUM_OP: "<" | "<=" | ">" | ">=">
 |   <BOOL_OP: "&&" | "||">
 |   <NOT_OP: "~">
 |   <EQ_OP: "=">
@@ -183,13 +184,21 @@ TOKEN: {
 |   <IDENTIFIER: ["a"-"z"] (["a"-"z"] | ["0"-"9"] | "_")*>
 }
 
-ENode S(): {
+/**
+ENTRY POINT
+<Program> ::= <Condition>
+ */
+ENode Program(): {
     ENode e;
 }
 {
     e = Condition() <EOF> { return e; }
 }
 
+
+/**
+<Condition> ::= <Condition1> <Condition_>
+ */
 ENode Condition(): {
     ENode e1, e2;
 }
@@ -197,6 +206,10 @@ ENode Condition(): {
     e1 = Condition1() e2 = Condition_(e1) { return e2; }
 }
 
+/**
+<Condition1> ::= ~ <Comparison>
+<Condition1> ::= <Comparison>
+ */
 ENode Condition1(): {
     ENode e1;
 }
@@ -205,6 +218,10 @@ ENode Condition1(): {
 |    e1 = Comparison() { return e1; }
 }
 
+/**
+<Condition_> ::= && <Comparison> <Condition_>
+<Condition_> ::= || <Comparison> <Condition_>
+ */
 ENode Condition_(ENode e1): {
     Token t;
     ENode e2, ef;
@@ -215,22 +232,57 @@ ENode Condition_(ENode e1): {
 }
 
 
+/**
+<Comparison> ::= <NumComparison> <Comparison_>
+ */
 ENode Comparison(): {
     ENode e1, e2;
 }
 {
-    e1 = Expression() e2 = Comparison_(e1) { return e2; }
+    e1 = NumComparison() e2 = Comparison_(e1) { return e2; }
 }
 
+/**
+<Comparison_> ::= == <NumComparison> <Comparison_>
+<Comparison_> ::= != <NumComparison> <Comparison_>
+ */
 ENode Comparison_(ENode e1): {
     Token t;
     ENode e2, ef;
 }
 {
-    t = <COMP_OP> e2 = Expression() ef = Comparison_(new BinaryExpr(t.toString(), e1, e2)) { return ef; }
+    t = <COMP_OP> e2 = NumComparison() ef = Comparison_(new BinaryExpr(t.toString(), e1, e2)) { return ef; }
 |   { return e1; }
 }
 
+/**
+<NumComparison> ::= <Expression> <NumComparison_>
+ */
+ENode NumComparison(): {
+    ENode e1, e2;
+}
+{
+    e1 = Expression() e2 = NumComparison_(e1) { return e2; }
+}
+
+/**
+<NumComparison_> ::= <  <NumComparison> <NumComparison_>
+<NumComparison_> ::= <= <NumComparison> <NumComparison_>
+<NumComparison_> ::= >  <NumComparison> <NumComparison_>
+<NumComparison_> ::= >= <NumComparison> <NumComparison_>
+ */
+ENode NumComparison_(ENode e1): {
+    Token t;
+    ENode e2, ef;
+}
+{
+    t = <COMP_NUM_OP> e2 = Expression() ef = NumComparison_(new BinaryExpr(t.toString(), e1, e2)) { return ef; }
+|   { return e1; }
+}
+
+/**
+<Expression> ::= <Fragment> <Expression_>
+ */
 ENode Expression(): {
     ENode e1, e2;
 }
@@ -238,6 +290,10 @@ ENode Expression(): {
     e1 = Fragment() e2 = Expression_(e1) { return e2; }
 }
 
+/**
+<Expression_> ::= + <Fragment> <Expression_>
+<Expression_> ::= - <Fragment> <Expression_>
+ */
 ENode Expression_(ENode e1): {
     ENode e2, ef;
 }
@@ -247,22 +303,31 @@ ENode Expression_(ENode e1): {
 |   { return e1; }
 }
 
+/**
+<Fragment> ::= <SubFragment>
+<Fragment> ::= - <SubFragment>
+<Fragment> ::= Bool_Lit
+<Fragment> ::= ( <Condition> )
+ */
 ENode Fragment(): {
     Token t;
     ENode e;
 }
 {
-    t = <IDENTIFIER>            { return new Identifier(t); }
-|   <SUB_OP> e = SubFragment()  { return e; }
-|   t = <NUM>                   { return new Num(t.toString()); }
+    e = SubFragment()           { return e; }
+|   <SUB_OP> e = SubFragment()  { return new UnaryExpr(e); }
 |   t = <BOOL_LIT>              { return new BoolLit(t.toString().equals("true")); }
 |   <LP> e = Condition() <RP>   { return e; }
 }
 
+/**
+<SubFragment> ::= Identifier
+<SubFragment> ::= Num
+ */
 ENode SubFragment(): {
     Token t;
 }
 {
-    t = <IDENTIFIER>            { return new UnaryExpr(new Identifier(t)); }
-|   t = <NUM>                   { return new UnaryExpr(new Num(t.toString())); }
+    t = <IDENTIFIER>            { return new Identifier(t); }
+|   t = <NUM>                   { return new Num(t.toString()); }
 }
