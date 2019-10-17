@@ -1,59 +1,43 @@
 
 call="java SyntaxChecker"
-
 error="error"
-
-n=0
-i=0
-
-function test() {
-    n=$((n + 1))
-    echo 
-    echo "============================"
-    echo 
-    echo $2'test'${n}' "'$1'":'
-    ${call} "$1" > ${file}
-    if [[ $? == 0 ]];then
-        if [[ $2 == "error" ]];then
-            i=$((i + 1))
-        fi
-    else
-        if [[ $2 != "error" ]];then
-            i=$((i + 1))
-        fi
-    fi
-    cat ${file}
-}
+testsdir="tests"
 
 javacc sample.jj && javac *.java || exit 1
 
 file=tmpfile
 
-##
-## TESTS
-##
+i=0
 
-test "0"            # numeric 0
-test "-0"           # numeric negative 0
-test "42"           # numeric
-test "-42"          # numeric negative
-test "042" error    # numeric error
-test "-042" error   # numeric error negative
+function test() {
+    local filename="${testsdir}/test${n}/input.txt"
+    local testfile="${testsdir}/test${n}/output.txt"
 
-test "a"            # identifier
-test "a_42"         # identifier
-test "A_42"         # identifier upper case
-test "while" error  # identifier invalid: keyword
-test "_a" error     # identifier
+    echo 
+    echo "============================"
+    echo 
+    echo "test${n}:"
+    ${call} $(< ${filename}) > ${file} && diff -w ${file} ${testfile}
+    if [[ ${?} != 0 && "$(< ${testfile})" != "error" ]];then
+        i=$((i + 1))
+        echo -e "\e[31mERROR\e[0m"
+    fi
+    cat ${file}
 
-test "true || true
-// blabla"            # identifier
-test "~true || true"  # identifier
-test "true ||" error  # identifier
+}
 
-test '1 +   2'      # identifier
-test '1 - 2'        # identifier
-test '1 -2'         # identifier
+for n in $(seq 1 $(find tests/ -maxdepth 1 -mindepth 1 -type d | wc -l)); do
+    test
+done
+
+# test "true || true
+# // blabla"            # 12 inline comment
+# test "~true || true"  # 13 muidentifier
+# test "true ||" error  # identifier
+
+# test '1 +   2'      # identifier
+# test '1 - 2'        # identifier
+# test '1 -2'         # identifier
 
 
 
