@@ -6,8 +6,19 @@ IGNORE_CASE = true;
 
 PARSER_BEGIN(SyntaxChecker)
 
+enum Level {
+    VOID,
+    INTEGER,
+    BOOLEAN
+}
+
+
 interface ENode {
     String toString();
+}
+
+interface Typeable {
+
 }
 
 class BinaryExpr implements ENode {
@@ -38,14 +49,14 @@ class Num implements ENode {
 }
 
 class Identifier implements ENode {
-    private String id;
+    private Token id;
 
-    Identifier(String _id) {
+    Identifier(Token _id) {
         id = _id;
     }
 
     public String toString() {
-        return "id("+id+")";
+        return "id("+id.toString()+")";
     }
 }
 
@@ -87,12 +98,35 @@ class BoolLit implements ENode {
 
 public class SyntaxChecker {
     public static void main(String[] args) {
+        SyntaxChecker parser;
+
+        if (args.length == 0) {
+            System.out.println("SLP Parser: Reading from standard input . . .");
+            parser = new SyntaxChecker(System.in);
+        } else if (args.length == 1 && args[0].equals("-h") == false && args[0].equals("--help") == false) {
+            try {
+                parser = new SyntaxChecker(new java.io.FileInputStream(args[0]));
+            } catch (java.io.FileNotFoundException e) {
+                System.out.println("SLP Parser: File " + args[0] + " not found.");
+                System.exit(1);
+                return;
+            }
+
+        } else {
+
+            System.out.println("");
+            System.out.println("USAGE:");
+            System.out.println("\tjava SyntaxChecker [inputfile.ccal]");
+            System.out.println("");
+            return;
+
+        }
+
         try {
-            ENode e = new SyntaxChecker(new java.io.StringReader(args[0])).S();
+            ENode e = parser.S();
             System.out.println(e.toString());
             System.out.println("Syntax is okay");
-        } catch (Throwable e) {
-            // Catching Throwable is ugly but JavaCC throws Error objects!
+        } catch (ParseException e) {
             System.out.println("Syntax check failed: " + e.getMessage());
             System.exit(1);
         }
@@ -110,7 +144,11 @@ SKIP : {
 |   "\t"
 |   "\n"
 |   "\r"
-|   <"//" (~["\n", "\r"])*>
+|   "\f"
+}
+
+SKIP : { /* COMMENTS */
+    <"//" (~["\r", "\n"])*>
 |   "/*" { ++commentNesting; } : IN_COMMENT
 }
 
@@ -214,17 +252,17 @@ ENode Fragment(): {
     ENode e;
 }
 {
-    t = <IDENTIFIER>            { return new Identifier(t.toString()); }
+    t = <IDENTIFIER>            { return new Identifier(t); }
 |   <SUB_OP> e = SubFragment()  { return e; }
 |   t = <NUM>                   { return new Num(t.toString()); }
 |   t = <BOOL_LIT>              { return new BoolLit(t.toString().equals("true")); }
-|   <LP> e = Expression() <RP>  { return e; }
+|   <LP> e = Condition() <RP>   { return e; }
 }
 
 ENode SubFragment(): {
     Token t;
 }
 {
-    t = <IDENTIFIER>            { return new UnaryExpr(new Identifier(t.toString())); }
+    t = <IDENTIFIER>            { return new UnaryExpr(new Identifier(t)); }
 |   t = <NUM>                   { return new UnaryExpr(new Num(t.toString())); }
 }
