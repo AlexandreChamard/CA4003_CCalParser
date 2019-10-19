@@ -1,2 +1,9 @@
--(0)
+{
+  type: "AssignmentExpression",
+  operator: -,
+  argument: {
+    type: "Literal",
+    value: 0
+  }
+}
 Syntax is okay

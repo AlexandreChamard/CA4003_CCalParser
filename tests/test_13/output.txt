@@ -1,2 +1,41 @@
--(+(-(+(1, 2), 3), 4), -(5))
+{
+  type: "AssignmentExpression",
+  operator: -,
+  left: {
+    type: "AssignmentExpression",
+    operator: +,
+    left: {
+      type: "AssignmentExpression",
+      operator: -,
+      left: {
+        type: "AssignmentExpression",
+        operator: +,
+        left: {
+          type: "Literal",
+          value: 1
+        },
+        right: {
+          type: "Literal",
+          value: 2
+        }
+      },
+      right: {
+        type: "Literal",
+        value: 3
+      }
+    },
+    right: {
+      type: "Literal",
+      value: 4
+    }
+  },
+  right: {
+    type: "AssignmentExpression",
+    operator: -,
+    argument: {
+      type: "Literal",
+      value: 5
+    }
+  }
+}
 Syntax is okay

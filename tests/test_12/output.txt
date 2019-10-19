@@ -1,2 +1,13 @@
-+(1, 2)
+{
+  type: "AssignmentExpression",
+  operator: +,
+  left: {
+    type: "Literal",
+    value: 1
+  },
+  right: {
+    type: "Literal",
+    value: 2
+  }
+}
 Syntax is okay
