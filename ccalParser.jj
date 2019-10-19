@@ -23,13 +23,58 @@ enum Type {
 interface Typeable {
     Type getType();
     ArrayList<Type> getComplexType();
-    boolean isLit();
+    boolean isLiteral();
 }
 
 
-abstract class ENode implements Show, Typeable {
+class Program implements Show {
+
+}
+
+class Declaration implements Show {
+
+}
+
+class Function implements Show {
+
+}
+
+class Main implements Show {
+
+}
+
+abstract class Statement implements Show {
+
+}
+
+class VariableDeclaration extends Statement {
+
+}
+
+class IfStatement extends Statement {
+
+}
+
+class WhileStatement extends Statement {
+
+}
+
+class SkipStatement extends Statement {
+
+}
+
+class ReturnStatement extends Statement {
+
+}
+
+class ExpressionStatement extends Statement {
+
+}
+
+
+abstract class Expression implements Show, Typeable {
     public ArrayList<Type> getComplexType() { return new ArrayList(); }
-    public boolean isLit() { return false; }
+    public boolean isLiteral() { return false; }
 
     public void checkValidity() throws ParseException {
         if (getType() == Type.INVALID)
@@ -37,12 +82,62 @@ abstract class ENode implements Show, Typeable {
     }
 }
 
-class BinaryExpr extends ENode {
-    private String type;
-    private ENode e1, e2;
+class AssignmentExpression extends Expression {
+    private Expression e1, e2;
 
-    BinaryExpr(String _type, ENode _e1, ENode _e2) throws ParseException {
-        type = _type;
+    AssignmentExpression(Expression _e1, Expression _e2) throws ParseException {
+        e1 = _e1;
+        e2 = _e2;
+        checkValidity();
+    }
+
+    public Type getType() {
+        Type t1 = e1.getType(), t2 = e2.getType();
+
+        if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
+            return t1;
+        if (t1 == t2)
+            return t1;
+        return Type.INVALID;
+    }
+
+    public String toString() {
+        return e1.toString()+" = "+e2.toString()+")";
+    }
+}
+
+class LogicalExpression extends Expression {
+    private String operator;
+    private Expression e1, e2;
+
+    LogicalExpression(String _operator, Expression _e1, Expression _e2) throws ParseException {
+        operator = _operator;
+        e1 = _e1;
+        e2 = _e2;
+        checkValidity();
+    }
+
+    public Type getType() {
+        Type t1 = e1.getType(), t2 = e2.getType();
+
+        if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
+            return t1;
+        if (t1 == Type.BOOLEAN && t1 == t2)
+            return Type.BOOLEAN;
+        return Type.INVALID;
+    }
+
+    public String toString() {
+        return "("+e1.toString()+" "+operator+" "+e2.toString()+")";
+    }
+}
+
+class BinaryExpression extends Expression {
+    private String operator;
+    private Expression e1, e2;
+
+    BinaryExpression(String _operator, Expression _e1, Expression _e2) throws ParseException {
+        operator = _operator;
         e1 = _e1;
         e2 = _e2;
         checkValidity();
@@ -54,24 +149,16 @@ class BinaryExpr extends ENode {
         if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
             return t1;
 
-        switch (type) {
-            case "&&":
-            case "||":
+        switch (operator) {
+            case "&&": case "||":
                 if (t1 == Type.BOOLEAN && t1 == t2)
                     return Type.BOOLEAN;
                 return Type.INVALID;
-            case "<":
-            case "<=":
-            case ">":
-            case ">=":
-            case "+":
-            case "-":
+            case "<": case "<=": case ">": case ">=": case "+": case "-":
                 if (t1 == Type.INTEGER && t1 == t2)
                     return Type.INTEGER;
                 return Type.INVALID;
-            case "==":
-            case "!=":
-            case "=":
+            case "==": case "!=": case "=":
                 if (t1 == t2)
                     return t1;
                 return Type.INVALID;
@@ -81,27 +168,44 @@ class BinaryExpr extends ENode {
     }
 
     public String toString() {
-        return type+"("+e1.toString()+", "+e2.toString()+")";
+        return "("+e1.toString()+" "+operator+" "+e2.toString()+")";
     }
 }
 
-class Num extends ENode {
-    private String i;
+class UnaryExpression extends Expression {
+    private String operator;
+    private Expression e;
 
-    public Num(String _i) {
-        i = _i;
+    UnaryExpression(String _operator, Expression _e) throws ParseException {
+        operator = _operator;
+        e = _e;
+        checkValidity();
     }
 
     public Type getType() {
-        return Type.INTEGER;
+        switch (operator) {
+            case "-":
+                if (e.getType() == Type.INTEGER)
+                    return  Type.INTEGER;
+                return Type.INVALID;
+            case "~":
+                if (e.getType() == Type.BOOLEAN)
+                    return  Type.BOOLEAN;
+            default:
+                return Type.INVALID;
+        }
     }
 
     public String toString() {
-        return i;
+        return operator+"("+e+")";
     }
 }
 
-class Identifier extends ENode {
+class CallExpression extends Expression {
+    public Type getType() { return Type.VOID; }
+}
+
+class Identifier extends Expression {
     private Token id;
 
     Identifier(Token _id) {
@@ -118,49 +222,31 @@ class Identifier extends ENode {
     }
 }
 
-class UnaryNot extends ENode {
-    private ENode e;
+abstract class Literal extends Expression {
+    public boolean isLiteral() { return true; }
+}
 
-    UnaryNot(ENode _e) throws ParseException {
-        e = _e;
-        checkValidity();
+class Number extends Literal {
+    private String value;
+
+    public Number(String _value) {
+        value = _value;
     }
 
     public Type getType() {
-        if (e.getType() == Type.BOOLEAN)
-            return  Type.BOOLEAN;
-        return Type.INVALID;
+        return Type.INTEGER;
     }
 
     public String toString() {
-        return "~("+e+")";
+        return value;
     }
 }
 
-class UnaryExpr extends ENode {
-    private ENode e;
+class Bool extends Literal {
+    private boolean value;
 
-    UnaryExpr(ENode _e) throws ParseException {
-        e = _e;
-        checkValidity();
-    }
-
-    public Type getType() {
-        if (e.getType() == Type.INTEGER)
-            return  Type.INTEGER;
-        return Type.INVALID;
-    }
-
-    public String toString() {
-        return "-("+e+")";
-    }
-}
-
-class BoolLit extends ENode {
-    private boolean b;
-
-    BoolLit(boolean _b) {
-        b = _b;
+    Bool(boolean _value) {
+        value = _value;
     }
 
     public Type getType() {
@@ -168,10 +254,14 @@ class BoolLit extends ENode {
     }
 
     public String toString() {
-        return Boolean.toString(b);
+        return Boolean.toString(value);
     }
 }
 
+
+//////////////////
+///    MAIN    ///
+//////////////////
 public class SyntaxChecker {
     public static void main(String[] args) {
         SyntaxChecker parser;
@@ -199,7 +289,7 @@ public class SyntaxChecker {
         }
 
         try {
-            ENode e = parser.Program();
+            Expression e = parser.Program();
             System.out.println(e.toString());
             System.out.println("Syntax is okay");
         } catch (Throwable e) {
@@ -241,7 +331,7 @@ TOKEN: {
 |   <SUB_OP: "-">
 |   <COMP_OP: "==" | "!=">
 |   <COMP_NUM_OP: "<" | "<=" | ">" | ">=">
-|   <BOOL_OP: "&&" | "||">
+|   <LOGI_OP: "&&" | "||">
 |   <NOT_OP: "~">
 |   <EQ_OP: "=">
 |   <COL: ":">
@@ -264,8 +354,8 @@ TOKEN: {
 ENTRY POINT
 <Program> ::= <Condition>
  */
-ENode Program(): {
-    ENode e;
+Expression Program(): {
+    Expression e;
 }
 {
     e = Condition() <EOF> { return e; }
@@ -275,8 +365,8 @@ ENode Program(): {
 /**
 <Condition> ::= <Condition1> <Condition_>
  */
-ENode Condition(): {
-    ENode e1, e2;
+Expression Condition(): {
+    Expression e1, e2;
 }
 {
     e1 = Condition1() e2 = Condition_(e1) { return e2; }
@@ -286,11 +376,11 @@ ENode Condition(): {
 <Condition1> ::= ~ <Comparison>
 <Condition1> ::= <Comparison>
  */
-ENode Condition1(): {
-    ENode e1;
+Expression Condition1(): {
+    Expression e1;
 }
 {
-    <NOT_OP> e1 = Comparison() { return new UnaryNot(e1); }
+    <NOT_OP> e1 = Comparison() { return new UnaryExpression("~", e1); }
 |    e1 = Comparison() { return e1; }
 }
 
@@ -298,12 +388,12 @@ ENode Condition1(): {
 <Condition_> ::= && <Comparison> <Condition_>
 <Condition_> ::= || <Comparison> <Condition_>
  */
-ENode Condition_(ENode e1): {
+Expression Condition_(Expression e1): {
     Token t;
-    ENode e2, ef;
+    Expression e2, ef;
 }
 {
-    t = <BOOL_OP> e2 = Comparison() ef = Condition_(new BinaryExpr(t.toString(), e1, e2)) { return ef; }
+    t = <LOGI_OP> e2 = Comparison() ef = Condition_(new LogicalExpression(t.toString(), e1, e2)) { return ef; }
 |   { return e1; }
 }
 
@@ -311,8 +401,8 @@ ENode Condition_(ENode e1): {
 /**
 <Comparison> ::= <NumComparison> <Comparison_>
  */
-ENode Comparison(): {
-    ENode e1, e2;
+Expression Comparison(): {
+    Expression e1, e2;
 }
 {
     e1 = NumComparison() e2 = Comparison_(e1) { return e2; }
@@ -322,20 +412,20 @@ ENode Comparison(): {
 <Comparison_> ::= == <NumComparison> <Comparison_>
 <Comparison_> ::= != <NumComparison> <Comparison_>
  */
-ENode Comparison_(ENode e1): {
+Expression Comparison_(Expression e1): {
     Token t;
-    ENode e2, ef;
+    Expression e2, ef;
 }
 {
-    t = <COMP_OP> e2 = NumComparison() ef = Comparison_(new BinaryExpr(t.toString(), e1, e2)) { return ef; }
+    t = <COMP_OP> e2 = NumComparison() ef = Comparison_(new BinaryExpression(t.toString(), e1, e2)) { return ef; }
 |   { return e1; }
 }
 
 /**
 <NumComparison> ::= <Expression> <NumComparison_>
  */
-ENode NumComparison(): {
-    ENode e1, e2;
+Expression NumComparison(): {
+    Expression e1, e2;
 }
 {
     e1 = Expression() e2 = NumComparison_(e1) { return e2; }
@@ -347,20 +437,20 @@ ENode NumComparison(): {
 <NumComparison_> ::= >  <NumComparison> <NumComparison_>
 <NumComparison_> ::= >= <NumComparison> <NumComparison_>
  */
-ENode NumComparison_(ENode e1): {
+Expression NumComparison_(Expression e1): {
     Token t;
-    ENode e2, ef;
+    Expression e2, ef;
 }
 {
-    t = <COMP_NUM_OP> e2 = Expression() ef = NumComparison_(new BinaryExpr(t.toString(), e1, e2)) { return ef; }
+    t = <COMP_NUM_OP> e2 = Expression() ef = NumComparison_(new BinaryExpression(t.toString(), e1, e2)) { return ef; }
 |   { return e1; }
 }
 
 /**
 <Expression> ::= <Fragment> <Expression_>
  */
-ENode Expression(): {
-    ENode e1, e2;
+Expression Expression(): {
+    Expression e1, e2;
 }
 {
     e1 = Fragment() e2 = Expression_(e1) { return e2; }
@@ -370,12 +460,12 @@ ENode Expression(): {
 <Expression_> ::= + <Fragment> <Expression_>
 <Expression_> ::= - <Fragment> <Expression_>
  */
-ENode Expression_(ENode e1): {
-    ENode e2, ef;
+Expression Expression_(Expression e1): {
+    Expression e2, ef;
 }
 {
-    <ADD_OP> e2 = Fragment() ef = Expression_(new BinaryExpr("+", e1, e2)) { return ef;}
-|   <SUB_OP> e2 = Fragment() ef = Expression_(new BinaryExpr("-", e1, e2)) { return ef;}
+    <ADD_OP> e2 = Fragment() ef = Expression_(new BinaryExpression("+", e1, e2)) { return ef;}
+|   <SUB_OP> e2 = Fragment() ef = Expression_(new BinaryExpression("-", e1, e2)) { return ef;}
 |   { return e1; }
 }
 
@@ -385,25 +475,25 @@ ENode Expression_(ENode e1): {
 <Fragment> ::= Bool_Lit
 <Fragment> ::= ( <Condition> )
  */
-ENode Fragment(): {
+Expression Fragment(): {
     Token t;
-    ENode e;
+    Expression e;
 }
 {
     e = SubFragment()           { return e; }
-|   <SUB_OP> e = SubFragment()  { return new UnaryExpr(e); }
-|   t = <BOOL_LIT>              { return new BoolLit(t.toString().equals("true")); }
+|   <SUB_OP> e = SubFragment()  { return new UnaryExpression("-", e); }
+|   t = <BOOL_LIT>              { return new Bool(t.toString().equals("true")); }
 |   <LP> e = Condition() <RP>   { return e; }
 }
 
 /**
 <SubFragment> ::= Identifier
-<SubFragment> ::= Num
+<SubFragment> ::= Number
  */
-ENode SubFragment(): {
+Expression SubFragment(): {
     Token t;
 }
 {
     t = <IDENTIFIER>            { return new Identifier(t); }
-|   t = <NUM>                   { return new Num(t.toString()); }
+|   t = <NUM>                   { return new Number(t.toString()); }
 }
