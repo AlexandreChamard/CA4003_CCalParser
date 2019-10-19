@@ -22,14 +22,21 @@ function test() {
     echo 
     echo "============================"
     echo 
-    echo "${f}: " ${filename}
-    ${call} ${filename} > ${file} && diff -w ${file} ${testfile}
-    if [[ ${?} != 0 && "$(< ${testfile})" != "error" ]];then
-        i=$((i + 1))
-        echo -e "\e[31mERROR\e[0m"
+    echo "${f}: ${call} ${filename}"
+    ${call} ${filename} > ${file}
+    if [[ ${?} -ne 0 ]];then
+        if [[ "$(< ${testfile})" != "error" ]]; then
+            i=$((i + 1))
+            echo -e "\e[31mERROR\e[0m"
+        fi
+    else
+        diff -w ${file} ${testfile}
+        if [[ ${?} -ne 0 ]];then
+            i=$((i + 1))
+            echo -e "\e[31mERROR\e[0m"
+        fi
     fi
     cat ${file}
-
 }
 
 for f in $(find ${testsdir}/ -maxdepth 1 -mindepth 1 -type d | sort);do
