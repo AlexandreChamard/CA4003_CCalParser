@@ -38,7 +38,7 @@ class SymbolTracker {
         if (l == null)
             throw new RuntimeException("Symbol "+key+" not found.");
         for (Symbol s : l) {
-            if (s.name == key) {
+            if (s.name.equals(key)) {
                 if (l.peek() != s) { // put the found symbol at the top
                     l.remove(s);
                     l.push(s);
@@ -53,7 +53,7 @@ class SymbolTracker {
         LinkedList<Symbol> l = symTracker.get(key);
 
         for (Symbol s : l) {
-            if (s.name == key) {
+            if (s.name.equals(key)) {
                 l.remove(s);
                 return;
             }
@@ -78,10 +78,10 @@ class SymbolTracker {
 
     public boolean inCurrentBlock(String key) {
         for (String s : undoStack) {
-            if (s == key)
-                return true;
             if (s == null)
                 return false;
+            if (s.equals(key))
+                return true;
         }
         return false;
     }
