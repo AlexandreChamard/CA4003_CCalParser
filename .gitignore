@@ -27,4 +27,5 @@ hs_err_pid*
 
 # source files
 !JsonShowHelper.java
+!AST.java
 !SymbolTracker.java

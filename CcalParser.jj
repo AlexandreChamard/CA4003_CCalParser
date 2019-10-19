@@ -1,0 +1,249 @@
+
+options
+{
+IGNORE_CASE = true;
+}
+
+PARSER_BEGIN(SyntaxChecker)
+
+//////////////////
+///    MAIN    ///
+//////////////////
+public class SyntaxChecker {
+    public static void main(String[] args) {
+        SyntaxChecker parser;
+
+        if (args.length == 0) {
+            System.out.println("SLP Parser: Reading from standard input . . .");
+            parser = new SyntaxChecker(System.in);
+        } else if (args.length == 1 && args[0].equals("-h") == false && args[0].equals("--help") == false) {
+            try {
+                parser = new SyntaxChecker(new java.io.FileInputStream(args[0]));
+            } catch (java.io.FileNotFoundException e) {
+                System.out.println("SLP Parser: File " + args[0] + " not found.");
+                System.exit(1);
+                return;
+            }
+
+        } else {
+
+            System.out.println("");
+            System.out.println("USAGE:");
+            System.out.println("\tjava SyntaxChecker [inputfile.ccal]");
+            System.out.println("");
+            return;
+
+        }
+
+        try {
+            Expression e = parser.Program();
+            System.out.println(e.toString(new JsonShowHelper()));
+            System.out.println("Syntax is okay");
+        } catch (Throwable e) {
+            System.out.println("Syntax check failed: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+}
+
+PARSER_END(SyntaxChecker)
+
+TOKEN_MGR_DECLS : {
+    static int commentNesting = 0;
+}
+
+SKIP : {
+    " "
+|   "\t"
+|   "\n"
+|   "\r"
+|   "\f"
+}
+
+SKIP : { /* COMMENTS */
+    <"//" (~["\r", "\n"])*>
+|   "/*" { ++commentNesting; } : IN_COMMENT
+}
+
+<IN_COMMENT> SKIP : {
+    "/*" { ++commentNesting; }
+|   "*/" { --commentNesting; if (commentNesting == 0) SwitchTo(DEFAULT); }
+|   <~[]>
+}
+
+TOKEN: {
+    <LP: "("> | <RP: ")">
+|   <LB: "{"> | <RB: "}">
+|   <ADD_OP: "+">
+|   <SUB_OP: "-">
+|   <COMP_OP: "==" | "!=">
+|   <COMP_NUM_OP: "<" | "<=" | ">" | ">=">
+|   <LOGI_OP: "&&" | "||">
+|   <NOT_OP: "~">
+|   <EQ_OP: "=">
+|   <COL: ":">
+|   <SEMIC: ";">
+|   <BOOL_LIT:"true" | "false">
+|   <VAR_MOD: "var" | "const">
+|   <VOID: "void">
+|   <VAR_TYPE: "boolean" | "integer">
+|   <MAIN: "main">
+|   <IF: "if">
+|   <ELSE: "else">
+|   <WHILE: "while">
+|   <SK: "skip">
+|   <RET: "return">
+|   <NUM: (["1"-"9"] (["0"-"9"])* | "0")>
+|   <IDENTIFIER: ["a"-"z"] (["a"-"z"] | ["0"-"9"] | "_")*>
+}
+
+/**
+ENTRY POINT
+<Program> ::= <Condition>
+ */
+Expression Program(): {
+    SymbolTracker st = SymbolTracker.getInstance();
+    Expression e;
+
+    st.newBlock();
+}
+{
+    e = Condition() <EOF> { st.deleteBlock(); return e; }
+}
+
+
+/**
+<Condition> ::= <Condition1> <Condition_>
+ */
+Expression Condition(): {
+    Expression e1, e2;
+}
+{
+    e1 = Condition1() e2 = Condition_(e1) { return e2; }
+}
+
+/**
+<Condition1> ::= ~ <Comparison>
+<Condition1> ::= <Comparison>
+ */
+Expression Condition1(): {
+    Expression e1;
+}
+{
+    <NOT_OP> e1 = Comparison() { return new UnaryExpression("~", e1); }
+|    e1 = Comparison() { return e1; }
+}
+
+/**
+<Condition_> ::= && <Comparison> <Condition_>
+<Condition_> ::= || <Comparison> <Condition_>
+ */
+Expression Condition_(Expression e1): {
+    Token t;
+    Expression e2, ef;
+}
+{
+    t = <LOGI_OP> e2 = Comparison() ef = Condition_(new LogicalExpression(t.toString(), e1, e2)) { return ef; }
+|   { return e1; }
+}
+
+
+/**
+<Comparison> ::= <NumComparison> <Comparison_>
+ */
+Expression Comparison(): {
+    Expression e1, e2;
+}
+{
+    e1 = NumComparison() e2 = Comparison_(e1) { return e2; }
+}
+
+/**
+<Comparison_> ::= == <NumComparison> <Comparison_>
+<Comparison_> ::= != <NumComparison> <Comparison_>
+ */
+Expression Comparison_(Expression e1): {
+    Token t;
+    Expression e2, ef;
+}
+{
+    t = <COMP_OP> e2 = NumComparison() ef = Comparison_(new BinaryExpression(t.toString(), e1, e2)) { return ef; }
+|   { return e1; }
+}
+
+/**
+<NumComparison> ::= <Expression> <NumComparison_>
+ */
+Expression NumComparison(): {
+    Expression e1, e2;
+}
+{
+    e1 = Expression() e2 = NumComparison_(e1) { return e2; }
+}
+
+/**
+<NumComparison_> ::= <  <NumComparison> <NumComparison_>
+<NumComparison_> ::= <= <NumComparison> <NumComparison_>
+<NumComparison_> ::= >  <NumComparison> <NumComparison_>
+<NumComparison_> ::= >= <NumComparison> <NumComparison_>
+ */
+Expression NumComparison_(Expression e1): {
+    Token t;
+    Expression e2, ef;
+}
+{
+    t = <COMP_NUM_OP> e2 = Expression() ef = NumComparison_(new BinaryExpression(t.toString(), e1, e2)) { return ef; }
+|   { return e1; }
+}
+
+/**
+<Expression> ::= <Fragment> <Expression_>
+ */
+Expression Expression(): {
+    Expression e1, e2;
+}
+{
+    e1 = Fragment() e2 = Expression_(e1) { return e2; }
+}
+
+/**
+<Expression_> ::= + <Fragment> <Expression_>
+<Expression_> ::= - <Fragment> <Expression_>
+ */
+Expression Expression_(Expression e1): {
+    Expression e2, ef;
+}
+{
+    <ADD_OP> e2 = Fragment() ef = Expression_(new BinaryExpression("+", e1, e2)) { return ef;}
+|   <SUB_OP> e2 = Fragment() ef = Expression_(new BinaryExpression("-", e1, e2)) { return ef;}
+|   { return e1; }
+}
+
+/**
+<Fragment> ::= <SubFragment>
+<Fragment> ::= - <SubFragment>
+<Fragment> ::= Bool_Lit
+<Fragment> ::= ( <Condition> )
+ */
+Expression Fragment(): {
+    Token t;
+    Expression e;
+}
+{
+    e = SubFragment()           { return e; }
+|   <SUB_OP> e = SubFragment()  { return new UnaryExpression("-", e); }
+|   t = <BOOL_LIT>              { return new Bool(t.toString().equals("true")); }
+|   <LP> e = Condition() <RP>   { return e; }
+}
+
+/**
+<SubFragment> ::= Identifier
+<SubFragment> ::= Number
+ */
+Expression SubFragment(): {
+    Token t;
+}
+{
+    t = <IDENTIFIER>            { return new Identifier(t); }
+|   t = <NUM>                   { return new Number(t.toString()); }
+}
