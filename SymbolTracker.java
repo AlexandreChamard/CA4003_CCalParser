@@ -1,23 +1,18 @@
 
 import java.util.*;
 
-class Symbol {
-    String name;
-    String type;
-
-    public Symbol(String _name, String _type) {
-        name = _name;
-        type = _type;
-    }
-
-    public String toString() {
-        return "<"+name+"::"+type+">";
-    }
-}
-
 class SymbolTracker {
     Hashtable<String, LinkedList<Symbol>> symTracker = new Hashtable<String, LinkedList<Symbol>>();
     Stack<String> undoStack = new Stack<String>();
+
+    private static SymbolTracker st;
+
+    public static SymbolTracker getInstance() {
+        if (st == null) {
+            st = new SymbolTracker();
+        }
+        return st;
+    }
 
     public void addSymbol(String key, Symbol s) throws RuntimeException {
         if (inCurrentBlock(key) == true)

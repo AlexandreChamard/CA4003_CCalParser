@@ -26,6 +26,21 @@ interface Typeable {
     boolean isLiteral();
 }
 
+class Symbol {
+    String name;
+    String type;
+
+    public Symbol(String _name, String _type) {
+        name = _name;
+        type = _type;
+    }
+
+    public String toString() { // debug
+        return "<"+name+"::"+type+">";
+    }
+}
+
+
 
 class Program implements Show {
     public String toString(JsonShowHelper jsh) {
@@ -411,10 +426,13 @@ ENTRY POINT
 <Program> ::= <Condition>
  */
 Expression Program(): {
+    SymbolTracker st = SymbolTracker.getInstance();
     Expression e;
+
+    st.newBlock();
 }
 {
-    e = Condition() <EOF> { return e; }
+    e = Condition() <EOF> { st.deleteBlock(); return e; }
 }
 
 
