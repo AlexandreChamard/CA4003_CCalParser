@@ -38,11 +38,11 @@ class Symbol {
 ///   Program  ///
 //////////////////
 class Program implements Show {
-    private ArrayList<Declaration> declarations;
-    private ArrayList<Function> functions;
+    private ArrayList<VariableDeclaration> declarations;
+    private ArrayList<FunctionDeclaration> functions;
     private MainFunction mainFunction;
 
-    public Program(ArrayList<Declaration> _declarations, ArrayList<Function> _functions, MainFunction _mainFunction) {
+    public Program(ArrayList<VariableDeclaration> _declarations, ArrayList<FunctionDeclaration> _functions, MainFunction _mainFunction) {
         declarations = _declarations;
         functions = _functions;
         mainFunction = _mainFunction;
@@ -54,10 +54,10 @@ class Program implements Show {
             + jsh.spaces + "\"body\": [\n";
 
         jsh.increase();
-        for (Declaration d : declarations) {
+        for (VariableDeclaration d : declarations) {
             str += jsh.spaces + d.toString(jsh) + ",\n";
         }
-        for (Function f : functions) {
+        for (FunctionDeclaration f : functions) {
             str += jsh.spaces + f.toString(jsh) + ",\n";
         }
         str += jsh.spaces + mainFunction.toString(jsh) + "\n"
