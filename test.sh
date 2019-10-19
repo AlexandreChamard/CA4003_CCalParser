@@ -1,5 +1,5 @@
 
-sourceFile="ccalParser.jj"
+sourceFile="CcalParser.jj"
 programName="SyntaxChecker"
 
 call="java ${programName}"
