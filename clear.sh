@@ -1,1 +1,1 @@
-rm -f *.class *.java
+git clean -dfX
