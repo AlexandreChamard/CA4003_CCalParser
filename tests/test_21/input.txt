@@ -1,0 +1,2 @@
+// error equality between integer and boolean
+42 == true

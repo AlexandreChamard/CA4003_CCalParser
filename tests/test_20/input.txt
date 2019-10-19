@@ -1,0 +1,2 @@
+// error comp between integer and boolean
+1 < true

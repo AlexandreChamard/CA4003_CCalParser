@@ -1,0 +1,2 @@
+// error chaining equalities
+1+4 == 2 + 3 == 6 + -1

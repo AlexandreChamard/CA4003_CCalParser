@@ -21,7 +21,7 @@ enum Type {
 }
 
 interface Typeable {
-    Type getType();
+    Type getType() throws ParseException;
     ArrayList<Type> getComplexType();
     boolean isLiteral();
 }
@@ -116,12 +116,10 @@ class AssignmentExpression extends Expression {
         checkValidity();
     }
 
-    public Type getType() {
+    public Type getType() throws ParseException {
         Type t1 = e1.getType(), t2 = e2.getType();
 
         if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
-            return t1;
-        if (t1 == t2)
             return t1;
         return Type.INVALID;
     }
@@ -147,19 +145,20 @@ class LogicalExpression extends Expression {
         checkValidity();
     }
 
-    public Type getType() {
+    public Type getType() throws ParseException {
         Type t1 = e1.getType(), t2 = e2.getType();
 
-        if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
-            return t1;
-        if (t1 == Type.BOOLEAN && t1 == t2)
+        if (t1 == Type.BOOLEAN && t2 == Type.BOOLEAN) {
+            if (e1.isLiteral() == true || e2.isLiteral() == true)
+                throw new ParseException("Invalid Logical Expression on Literal."); // because ccal
             return Type.BOOLEAN;
+        }
         return Type.INVALID;
     }
 
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            +jsh.increase() + "\"type\": \"AssignmentExpression\",\n"
+            +jsh.increase() + "\"type\": \"LogicalExpression\",\n"
             +jsh.spaces + "\"operator\": \"" + operator + "\",\n"
             +jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
             +jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
@@ -178,23 +177,24 @@ class BinaryExpression extends Expression {
         checkValidity();
     }
 
-    public Type getType() {
+    public Type getType() throws ParseException {
         Type t1 = e1.getType(), t2 = e2.getType();
 
-        if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
-            return t1;
-
         switch (operator) {
-            case "<": case "<=": case ">": case ">=": case "+": case "-":
-                if (t1 == Type.INTEGER && t1 == t2)
+            case "+": case "-":
+                if (t1 == Type.INTEGER && t2 == Type.INTEGER)
                     return Type.INTEGER;
                 return Type.INVALID;
+            case "<": case "<=": case ">": case ">=":
+                if (t1 == Type.INTEGER && t2 == Type.INTEGER)
+                    return Type.BOOLEAN;
+                return Type.INVALID;
             case "==": case "!=":
-                if (t1 == t2)
-                    return t1;
+                if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
+                    return Type.BOOLEAN;
                 return Type.INVALID;
             default:
-                return t2;
+                return Type.INVALID; // normaly unreachable
         }
     }
 
@@ -218,7 +218,7 @@ class UnaryExpression extends Expression {
         checkValidity();
     }
 
-    public Type getType() {
+    public Type getType() throws ParseException {
         switch (operator) {
             case "-":
                 if (e.getType() == Type.INTEGER)
@@ -242,7 +242,7 @@ class UnaryExpression extends Expression {
 }
 
 class CallExpression extends Expression {
-    public Type getType() { return Type.VOID; }
+    public Type getType() throws ParseException { return Type.VOID; }
     
     public String toString(JsonShowHelper jsh) {
         return "";
@@ -256,7 +256,7 @@ class Identifier extends Expression {
         id = _id;
     }
 
-    public Type getType() {
+    public Type getType() throws ParseException {
         /** check in identifier hashtable */
         return Type.VOID;
     }
@@ -280,7 +280,7 @@ class Number extends Literal {
         value = _value;
     }
 
-    public Type getType() {
+    public Type getType() throws ParseException {
         return Type.INTEGER;
     }
 
@@ -299,7 +299,7 @@ class Bool extends Literal {
         value = _value;
     }
 
-    public Type getType() {
+    public Type getType() throws ParseException {
         return Type.BOOLEAN;
     }
 

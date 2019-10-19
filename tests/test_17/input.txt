@@ -1,0 +1,2 @@
+// precedence (equality, logical)
+1 < 4 != false && 5 == 7-2

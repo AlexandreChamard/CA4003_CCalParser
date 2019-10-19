@@ -1,2 +1,2 @@
-// invalid equality
+// invalid operation (int + bool)
 1 + true

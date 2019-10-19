@@ -1,0 +1,2 @@
+// error logical operation on literal boolean
+42 - 2 == 40 || false

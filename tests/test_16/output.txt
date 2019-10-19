@@ -1,0 +1,29 @@
+{
+  "type": "BinaryExpression",
+  "operator": "!=",
+  "left": {
+    "type": "BinaryExpression",
+    "operator": "<",
+    "left": {
+      "type": "Literal",
+      "value": 3
+    },
+    "right": {
+      "type": "Literal",
+      "value": 4
+    }
+  },
+  "right": {
+    "type": "BinaryExpression",
+    "operator": ">=",
+    "left": {
+      "type": "Literal",
+      "value": 3
+    },
+    "right": {
+      "type": "Literal",
+      "value": 4
+    }
+  }
+}
+Syntax is okay
