@@ -23,44 +23,31 @@ function test() {
     echo "============================"
     echo 
     echo "${f}: ${call} ${filename}"
-    ${call} ${filename} > ${file}
+    ${call} "${filename}" > "${file}"
     if [[ ${?} -ne 0 ]];then
         if [[ "$(< ${testfile})" != "error" ]]; then
             i=$((i + 1))
             echo -e "\e[31mERROR\e[0m"
         fi
     else
-        diff -w ${file} ${testfile}
+        diff -w "${file}" "${testfile}"
         if [[ ${?} -ne 0 ]];then
             i=$((i + 1))
             echo -e "\e[31mERROR\e[0m"
         fi
     fi
-    cat ${file}
+    cat "${file}"
 }
 
 for f in $(find ${testsdir}/ -maxdepth 1 -mindepth 1 -type d | sort);do
     test
 done
 
-# test "true || true
-# // blabla"            # 12 inline comment
-# test "~true || true"  # 13 muidentifier
-# test "true ||" error  # identifier
-
-# test '1 +   2'      # identifier
-# test '1 - 2'        # identifier
-# test '1 -2'         # identifier
-
-
-
-
-
-rm ${file}
+rm "${file}"
 
 echo 
 echo "============================"
 echo 
-echo ${n}" tests: "${i}" errors found."
+echo "${n} tests: ${i} errors found."
 
 exit ${i}
