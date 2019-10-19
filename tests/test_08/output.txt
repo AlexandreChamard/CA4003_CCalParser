@@ -1,5 +1,5 @@
 {
-  type: "Identifier",
-  name: a_42
+  "type": "Identifier",
+  "name": "a_42"
 }
 Syntax is okay

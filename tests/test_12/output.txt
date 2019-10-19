@@ -1,13 +1,13 @@
 {
-  type: "AssignmentExpression",
-  operator: +,
-  left: {
-    type: "Literal",
-    value: 1
+  "type": "BinaryExpression",
+  "operator": "+",
+  "left": {
+    "type": "Literal",
+    "value": 1
   },
-  right: {
-    type: "Literal",
-    value: 2
+  "right": {
+    "type": "Literal",
+    "value": 2
   }
 }
 Syntax is okay

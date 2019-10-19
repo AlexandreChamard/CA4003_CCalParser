@@ -1,9 +1,9 @@
 {
-  type: "AssignmentExpression",
-  operator: -,
-  argument: {
-    type: "Literal",
-    value: 0
+  "type": "UnaryExpression",
+  "operator": "-",
+  "argument": {
+    "type": "Literal",
+    "value": 0
   }
 }
 Syntax is okay

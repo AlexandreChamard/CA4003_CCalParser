@@ -1,5 +1,5 @@
 {
-  type: "Literal",
-  value: 0
+  "type": "Literal",
+  "value": 0
 }
 Syntax is okay
