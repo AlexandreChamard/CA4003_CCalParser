@@ -225,8 +225,11 @@ class UnaryExpression extends Expression {
                     return  Type.INTEGER;
                 return Type.INVALID;
             case "~":
-                if (e.getType() == Type.BOOLEAN)
+                if (e.getType() == Type.BOOLEAN) {
+                    if (e.isLiteral() == true)
+                        throw new ParseException("Invalid Unary '~` on Literal."); // because ccal
                     return  Type.BOOLEAN;
+                }
             default:
                 return Type.INVALID;
         }

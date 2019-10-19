@@ -1,0 +1,2 @@
+// error Unary '~` operation on literal boolean
+~  false
