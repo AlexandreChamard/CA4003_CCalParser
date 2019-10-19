@@ -81,7 +81,7 @@ class SymbolTracker {
         return false;
     }
 
-    protected static String symbolToString(Symbol s) {
+    protected static String symbolToString(Symbol s) { // debug
         if (s == null)
             return "null";
         return s.toString();

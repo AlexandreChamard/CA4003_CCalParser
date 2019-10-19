@@ -34,70 +34,100 @@ class Symbol {
 }
 
 
-
+//////////////////
+///   Program  ///
+//////////////////
 class Program implements Show {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
 }
 
+
+
+///////////////////
+/// Declaration ///
+///////////////////
 class Declaration implements Show {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
-
 }
 
+//////////////////
+///  Function  ///
+//////////////////
 class Function implements Show {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
-
 }
 
-class Main implements Show {
+//////////////////
+///  MainFunc  ///
+//////////////////
+class MainFunction implements Show {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
-
 }
 
+
+
+//////////////////
+///  Statement ///
+//////////////////
 abstract class Statement implements Show {
-
 }
 
+//////////////////
+///   VarDecl  ///
+//////////////////
 class VariableDeclaration extends Statement {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
-
 }
 
+//////////////////
+///   IfState  ///
+//////////////////
 class IfStatement extends Statement {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
-
 }
 
+//////////////////
+/// WhileState ///
+//////////////////
 class WhileStatement extends Statement {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
 }
 
+//////////////////
+///  SkipState ///
+//////////////////
 class SkipStatement extends Statement {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
 }
 
+///////////////////
+/// ReturnState ///
+///////////////////
 class ReturnStatement extends Statement {
     public String toString(JsonShowHelper jsh) {
         return "";
     }
 }
 
+//////////////////
+///  ExprState ///
+//////////////////
 class ExpressionStatement extends Statement {
     public String toString(JsonShowHelper jsh) {
         return "";
@@ -105,6 +135,10 @@ class ExpressionStatement extends Statement {
 }
 
 
+
+//////////////////
+///    Expr    ///
+//////////////////
 abstract class Expression implements Show, Typeable {
     public ArrayList<Type> getComplexType() { return new ArrayList(); }
     public boolean isLiteral() { return false; }
@@ -115,6 +149,9 @@ abstract class Expression implements Show, Typeable {
     }
 }
 
+//////////////////////
+/// AssignmentExpr ///
+//////////////////////
 class AssignmentExpression extends Expression {
     private Expression e1, e2;
 
@@ -134,14 +171,17 @@ class AssignmentExpression extends Expression {
 
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            +jsh.increase() + "\"type\": \"AssignmentExpression\",\n"
-            +jsh.spaces + "\"operator\": \"=\",\n"
-            +jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
-            +jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
-            +jsh.decrease() + "}";
+            + jsh.increase() + "\"type\": \"AssignmentExpression\",\n"
+            + jsh.spaces + "\"operator\": \"=\",\n"
+            + jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
+            + jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
+///////////////////
+/// LogicalExpr ///
+///////////////////
 class LogicalExpression extends Expression {
     private String operator;
     private Expression e1, e2;
@@ -166,14 +206,17 @@ class LogicalExpression extends Expression {
 
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            +jsh.increase() + "\"type\": \"LogicalExpression\",\n"
-            +jsh.spaces + "\"operator\": \"" + operator + "\",\n"
-            +jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
-            +jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
-            +jsh.decrease() + "}";
+            + jsh.increase() + "\"type\": \"LogicalExpression\",\n"
+            + jsh.spaces + "\"operator\": \"" + operator + "\",\n"
+            + jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
+            + jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
+//////////////////
+/// BinaryExpr ///
+//////////////////
 class BinaryExpression extends Expression {
     private String operator;
     private Expression e1, e2;
@@ -202,20 +245,23 @@ class BinaryExpression extends Expression {
                     return Type.BOOLEAN;
                 return Type.INVALID;
             default:
-                return Type.INVALID; // normaly unreachable
+                return Type.INVALID; // normally unreachable
         }
     }
 
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            +jsh.increase() + "\"type\": \"BinaryExpression\",\n"
-            +jsh.spaces + "\"operator\": \"" + operator + "\",\n"
-            +jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
-            +jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
-            +jsh.decrease() + "}";
+            + jsh.increase() + "\"type\": \"BinaryExpression\",\n"
+            + jsh.spaces + "\"operator\": \"" + operator + "\",\n"
+            + jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
+            + jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
+//////////////////
+///  UnaryExpr ///
+//////////////////
 class UnaryExpression extends Expression {
     private String operator;
     private Expression e;
@@ -245,13 +291,16 @@ class UnaryExpression extends Expression {
 
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            +jsh.increase() + "\"type\": \"UnaryExpression\",\n"
-            +jsh.spaces + "\"operator\": \"" + operator + "\",\n"
-            +jsh.spaces + "\"argument\": " + e.toString(jsh) + "\n"
-            +jsh.decrease() + "}";
+            + jsh.increase() + "\"type\": \"UnaryExpression\",\n"
+            + jsh.spaces + "\"operator\": \"" + operator + "\",\n"
+            + jsh.spaces + "\"argument\": " + e.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
+//////////////////
+///  CallExpr  ///
+//////////////////
 class CallExpression extends Expression {
     public Type getType() throws ParseException { return Type.VOID; }
     
@@ -260,6 +309,11 @@ class CallExpression extends Expression {
     }
 }
 
+
+
+//////////////////
+/// Identifier ///
+//////////////////
 class Identifier extends Expression {
     private Token id;
 
@@ -274,16 +328,24 @@ class Identifier extends Expression {
 
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            +jsh.increase() + "\"type\": \"Identifier\",\n"
-            +jsh.spaces + "\"name\": \"" + id + "\"\n"
-            +jsh.decrease() + "}";
+            + jsh.increase() + "\"type\": \"Identifier\",\n"
+            + jsh.spaces + "\"name\": \"" + id + "\"\n"
+            + jsh.decrease() + "}";
     }
 }
 
+
+
+//////////////////
+///   Literal  ///
+//////////////////
 abstract class Literal extends Expression {
     public boolean isLiteral() { return true; }
 }
 
+//////////////////
+///   Number   ///
+//////////////////
 class Number extends Literal {
     private String value;
 
@@ -297,12 +359,15 @@ class Number extends Literal {
 
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            +jsh.increase() + "\"type\": \"Literal\",\n"
-            +jsh.spaces + "\"value\": " + value + "\n"
-            +jsh.decrease() + "}";
+            + jsh.increase() + "\"type\": \"Literal\",\n"
+            + jsh.spaces + "\"value\": " + value + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
+//////////////////
+///    Bool    ///
+//////////////////
 class Bool extends Literal {
     private boolean value;
 
@@ -316,8 +381,8 @@ class Bool extends Literal {
 
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            +jsh.increase() + "\"type\": \"Literal\",\n"
-            +jsh.spaces + "\"value\": " + Boolean.toString(value) + "\n"
-            +jsh.decrease() + "}";
+            + jsh.increase() + "\"type\": \"Literal\",\n"
+            + jsh.spaces + "\"value\": " + Boolean.toString(value) + "\n"
+            + jsh.decrease() + "}";
     }
 }
