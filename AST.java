@@ -15,7 +15,7 @@ enum Type {
 
 interface Typeable {
     Type getType() throws ParseException;
-    ArrayList<Type> getComplexType();
+    ArrayList<Type> getComplexType() throws ParseException;
     boolean isLiteral();
 }
 
@@ -38,28 +38,67 @@ class Symbol {
 ///   Program  ///
 //////////////////
 class Program implements Show {
+    private ArrayList<Declaration> declarations;
+    private ArrayList<Function> functions;
+    private MainFunction mainFunction;
+
+    public Program(ArrayList<Declaration> _declarations, ArrayList<Function> _functions, MainFunction _mainFunction) {
+        declarations = _declarations;
+        functions = _functions;
+        mainFunction = _mainFunction;
+    }
+
     public String toString(JsonShowHelper jsh) {
-        return "";
+        String str = "\"Program\": {\n"
+            + jsh.increase() + "\"type\": \"Program\",\n"
+            + jsh.spaces + "\"body\": [\n";
+
+        jsh.increase();
+        for (Declaration d : declarations) {
+            str += jsh.spaces + d.toString(jsh) + ",\n";
+        }
+        for (Function f : functions) {
+            str += jsh.spaces + f.toString(jsh) + ",\n";
+        }
+        str += jsh.spaces + mainFunction.toString(jsh) + "\n"
+            +  jsh.decrease() + "]\n";
+        return str + jsh.decrease() + "}";
     }
 }
 
 
 
-///////////////////
-/// Declaration ///
-///////////////////
-class Declaration implements Show {
-    public String toString(JsonShowHelper jsh) {
-        return "";
-    }
-}
+////////////////////
+/// FunctionDecl ///
+////////////////////
+class FunctionDeclaration implements Show {
+    Identifier id;
+    ArrayList<Identifier> params;
+    BlockStatement statements;
 
-//////////////////
-///  Function  ///
-//////////////////
-class Function implements Show {
+    public FunctionDeclaration(Identifier _id, ArrayList<Identifier> _params, BlockStatement _statements) {
+        id = _id;
+        params = _params;
+        statements = _statements;
+    }
+
     public String toString(JsonShowHelper jsh) {
-        return "";
+        String str = "{\n"
+            + jsh.increase() + "\"type\": \"FunctionDeclaration\",\n"
+            + jsh.spaces + "\"id\": \"" + id + "\",\n";
+
+        str += jsh.spaces + "\"params\": [\n";
+        jsh.increase();
+        for (Identifier p : params) {
+            str += jsh.spaces + p.toString(jsh);
+            if (p != params.get(params.size() - 1))
+                str += ",";
+            str += "\n";
+        }
+        str += jsh.decrease() + "],\n";
+
+        str += jsh.spaces + "\"body\": " + statements.toString(jsh) + "\n";
+        return str + jsh.decrease() + "}";
     }
 }
 
@@ -67,8 +106,18 @@ class Function implements Show {
 ///  MainFunc  ///
 //////////////////
 class MainFunction implements Show {
+    BlockStatement statements;
+
+    public MainFunction(BlockStatement _statements) {
+        statements = _statements;
+    }
+
     public String toString(JsonShowHelper jsh) {
-        return "";
+        return "{\n"
+            + jsh.increase() + "\"type\": \"FunctionDeclaration\",\n"
+            + jsh.spaces + "\"name\": \"main\",\n" // should be an identifier
+            + jsh.spaces + "\"body\": " + statements.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
@@ -80,12 +129,62 @@ class MainFunction implements Show {
 abstract class Statement implements Show {
 }
 
+class BlockStatement implements Show {
+    ArrayList<Statement> statements;
+
+    public BlockStatement(ArrayList<Statement> _statements) {
+        statements = _statements;
+    }
+
+    public String toString(JsonShowHelper jsh) {
+        String str = "[\n";
+
+        jsh.increase();
+        for (Statement s : statements) {
+            str += jsh.spaces + s.toString(jsh);
+            if (s != statements.get(statements.size() - 1))
+                str += ",";
+            str += "\n";
+        }
+        str += jsh.decrease() + "]\n";
+        return str;
+    }
+}
+
 //////////////////
 ///   VarDecl  ///
 //////////////////
 class VariableDeclaration extends Statement {
+    Identifier id;
+    Expression e;
+    Symbol s;
+
+    public VariableDeclaration(Identifier _id, Expression _e) {
+        id = _id;
+        e = _e;
+        initSymbol(id.id.toString(), "const");
+    }
+
+    public VariableDeclaration(Identifier _id) {
+        id = _id;
+        initSymbol(id.id.toString(), "var");
+    }
+
+    void initSymbol(String name, String type) {
+        s = new Symbol(name, type);
+        SymbolTracker.getInstance().addSymbol(s);
+    }
+
     public String toString(JsonShowHelper jsh) {
-        return "";
+        String str = "{\n"
+            + jsh.increase() + "\"type\": \"VariableDeclaration\",\n"
+            + jsh.spaces + "\"id\": " + id.toString(jsh) + ",\n";
+        if (e != null) {
+            str += jsh.spaces + "\"init\": " + e.toString(jsh) + ",\n";
+        }
+        str += jsh.spaces + "\"kind\": " + s.type + "\n"
+            + jsh.decrease() + "}";
+        return str;
     }
 }
 
@@ -93,8 +192,23 @@ class VariableDeclaration extends Statement {
 ///   IfState  ///
 //////////////////
 class IfStatement extends Statement {
+    Expression test;
+    BlockStatement consequent;
+    BlockStatement alternate;
+
+    public IfStatement(Expression _test, BlockStatement _consequent, BlockStatement _alternate) {
+        test = _test;
+        consequent = _consequent;
+        alternate = _alternate;
+    }
+
     public String toString(JsonShowHelper jsh) {
-        return "";
+        return "{\n"
+            + jsh.increase() + "\"type\": \"IfStatement\",\n"
+            + jsh.spaces + "\"test\": " + test.toString(jsh) + ",\n"
+            + jsh.spaces + "\"consequent\": " + consequent.toString(jsh) + ",\n"
+            + jsh.spaces + "\"alternate\": " + alternate.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
@@ -102,8 +216,20 @@ class IfStatement extends Statement {
 /// WhileState ///
 //////////////////
 class WhileStatement extends Statement {
+    Expression test;
+    BlockStatement body;
+
+    public WhileStatement(Expression _test, BlockStatement _body) {
+        test = _test;
+        body = _body;
+    }
+
     public String toString(JsonShowHelper jsh) {
-        return "";
+        return "{\n"
+            + jsh.increase() + "\"type\": \"WhileStatement\",\n"
+            + jsh.spaces + "\"test\": " + test.toString(jsh) + ",\n"
+            + jsh.spaces + "\"body\": " + body.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
@@ -112,7 +238,9 @@ class WhileStatement extends Statement {
 //////////////////
 class SkipStatement extends Statement {
     public String toString(JsonShowHelper jsh) {
-        return "";
+        return "{\n"
+            + jsh.increase() + "\"type\": \"SkipeStatement\"\n"
+            + jsh.decrease() + "}";
     }
 }
 
@@ -120,8 +248,20 @@ class SkipStatement extends Statement {
 /// ReturnState ///
 ///////////////////
 class ReturnStatement extends Statement {
+    Expression argument;
+
+    public ReturnStatement() {
+    }
+
+    public ReturnStatement(Expression _argument) {
+        argument = _argument;
+    }
+
     public String toString(JsonShowHelper jsh) {
-        return "";
+        return "{\n"
+            + jsh.increase() + "\"type\": \"ReturnStatement\",\n"
+            + jsh.spaces + "\"argument\": " + argument.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
@@ -129,8 +269,17 @@ class ReturnStatement extends Statement {
 ///  ExprState ///
 //////////////////
 class ExpressionStatement extends Statement {
+    Expression e;
+
+    public ExpressionStatement(Expression _e) {
+        e = _e;
+    }
+
     public String toString(JsonShowHelper jsh) {
-        return "";
+        return "{\n"
+            + jsh.increase() + "\"type\": \"ExpressionStatement\",\n"
+            + jsh.spaces + "\"expression\": " + e.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
@@ -140,7 +289,10 @@ class ExpressionStatement extends Statement {
 ///    Expr    ///
 //////////////////
 abstract class Expression implements Show, Typeable {
-    public ArrayList<Type> getComplexType() { return new ArrayList(); }
+    public ArrayList<Type> getComplexType() throws ParseException {
+        return new ArrayList();
+    }
+
     public boolean isLiteral() { return false; }
 
     public void checkValidity() throws ParseException {
@@ -302,10 +454,28 @@ class UnaryExpression extends Expression {
 ///  CallExpr  ///
 //////////////////
 class CallExpression extends Expression {
+    Identifier calee;
+    ArrayList<Identifier> arguments;
+
     public Type getType() throws ParseException { return Type.VOID; }
+
+    public ArrayList<Type> getComplexType() throws ParseException { return new ArrayList<Type>(); }
     
     public String toString(JsonShowHelper jsh) {
-        return "";
+        String str = "{\n"
+            + jsh.increase() + "\"type\": \"CallExpression\",\n"
+            + jsh.spaces + "\"calee\": \"" + calee.toString(jsh) + "\",\n";
+        
+        str += jsh.spaces + "\"arguments\": [\n";
+        jsh.increase();
+        for (Identifier arg : arguments) {
+            str += jsh.spaces + arg.toString(jsh);
+            if (arg != arguments.get(arguments.size() - 1))
+                str += ",";
+            str += "\n";
+        }
+        str += jsh.decrease() + "],\n";
+        return str + jsh.decrease() + "}";
     }
 }
 
@@ -315,7 +485,7 @@ class CallExpression extends Expression {
 /// Identifier ///
 //////////////////
 class Identifier extends Expression {
-    private Token id;
+    public Token id;
 
     Identifier(Token _id) {
         id = _id;
@@ -347,7 +517,7 @@ abstract class Literal extends Expression {
 ///   Number   ///
 //////////////////
 class Number extends Literal {
-    private String value;
+    public String value;
 
     public Number(String _value) {
         value = _value;
@@ -369,7 +539,7 @@ class Number extends Literal {
 ///    Bool    ///
 //////////////////
 class Bool extends Literal {
-    private boolean value;
+    public boolean value;
 
     Bool(boolean _value) {
         value = _value;
@@ -382,7 +552,7 @@ class Bool extends Literal {
     public String toString(JsonShowHelper jsh) {
         return "{\n"
             + jsh.increase() + "\"type\": \"Literal\",\n"
-            + jsh.spaces + "\"value\": " + Boolean.toString(value) + "\n"
+            + jsh.spaces + "\"value\": " + value + "\n"
             + jsh.decrease() + "}";
     }
 }
