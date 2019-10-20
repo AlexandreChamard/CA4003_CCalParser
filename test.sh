@@ -1,4 +1,4 @@
-
+#!/bin/bash
 sourceFile="CcalParser.jj"
 programName="SyntaxChecker"
 
