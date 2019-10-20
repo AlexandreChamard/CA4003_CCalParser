@@ -326,7 +326,7 @@ class ExpressionStatement extends Statement {
 //////////////////
 abstract class Expression implements Show, Typeable {
     public ArrayList<Type> getComplexType() throws ParseException {
-        return new ArrayList();
+        return new ArrayList<Type>();
     }
 
     public boolean isLiteral() { return false; }
