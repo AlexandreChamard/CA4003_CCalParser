@@ -44,17 +44,20 @@ interface Typeable {
 }
 
 class Symbol {
+    String kind;
     String name;
     Type type;
 
-    public Symbol(String _name, Type _type) {
+    public Symbol(String _name, Type _type, String _kind) {
         name = _name;
         type = _type;
+        kind = _kind;
     }
 
-    public Symbol(String _name, String _type) {
+    public Symbol(String _name, String _type, String _kind) {
         name = _name;
         type = Typeable.stringToType(_type);
+        kind = _kind;
     }
 
     public String toString() { // debug
@@ -67,54 +70,49 @@ class Symbol {
 ///   Program  ///
 //////////////////
 class Program implements Show {
-    private ArrayList<VariableDeclaration> declarations;
-    private ArrayList<FunctionDeclaration> functions;
-    private MainFunction mainFunction;
+    private StatementBlock statements;
+    private MainFunction main;
 
-    public Program(ArrayList<VariableDeclaration> _declarations, ArrayList<FunctionDeclaration> _functions, MainFunction _mainFunction) {
-        declarations = _declarations;
-        functions = _functions;
-        mainFunction = _mainFunction;
+    public Program(StatementBlock _statements, MainFunction _main) {
+        statements = _statements;
+        main = _main;
     }
 
     public String toString(JsonShowHelper jsh) {
-        String str = "\"Program\": {\n"
+        return "\"Program\": {\n"
             + jsh.increase() + "\"type\": \"Program\",\n"
-            + jsh.spaces + "\"body\": [\n";
-
-        jsh.increase();
-        for (VariableDeclaration d : declarations) {
-            str += jsh.spaces + d.toString(jsh) + ",\n";
-        }
-        for (FunctionDeclaration f : functions) {
-            str += jsh.spaces + f.toString(jsh) + ",\n";
-        }
-        str += jsh.spaces + mainFunction.toString(jsh) + "\n"
-            +  jsh.decrease() + "]\n";
-        return str + jsh.decrease() + "}";
+            + jsh.spaces + "\"body\": " + statements.toString(jsh) + ",\n"
+            + jsh.spaces + "\"main\": " + main.toString(jsh) + "\n"
+            + jsh.decrease() + "}";
     }
 }
 
 
 
+//////////////////
+///  Statement ///
+//////////////////
+abstract class Statement implements Show {
+}
+
 ////////////////////
 /// FunctionDecl ///
 ////////////////////
-class FunctionDeclaration implements Show {
+class FunctionDeclaration extends Statement {
     Identifier id;
-    ArrayList<Identifier> params;
-    BlockStatement statements;
+    ArrayList<VariableDeclaration> params;
+    StatementBlock statements;
 
-    public FunctionDeclaration(Identifier _id, Token type, ArrayList<Identifier> _params, BlockStatement _statements) {
-        id = _id;
+    public FunctionDeclaration(Token _id, String type, ArrayList<VariableDeclaration> _params, StatementBlock _statements) {
+        id = new Identifier(_id);
         params = _params;
         statements = _statements;
 
-        initSymbol(id.id.toString(), type.toString());
+        initSymbol(id.id.toString(), type);
     }
 
     public void initSymbol(String name, String type) {
-        id.updateSymbol(new Symbol(name, type));
+        id.updateSymbol(new Symbol(name, type, "function"));
         SymbolTracker.getInstance().addSymbol(id.s);
     }
 
@@ -126,7 +124,7 @@ class FunctionDeclaration implements Show {
 
         str += jsh.spaces + "\"params\": [\n";
         jsh.increase();
-        for (Identifier p : params) {
+        for (VariableDeclaration p : params) {
             str += jsh.spaces + p.toString(jsh);
             if (p != params.get(params.size() - 1))
                 str += ",";
@@ -142,10 +140,10 @@ class FunctionDeclaration implements Show {
 //////////////////
 ///  MainFunc  ///
 //////////////////
-class MainFunction implements Show {
-    BlockStatement statements;
+class MainFunction extends Statement {
+    StatementBlock statements;
 
-    public MainFunction(BlockStatement _statements) {
+    public MainFunction(StatementBlock _statements) {
         statements = _statements;
     }
 
@@ -159,18 +157,33 @@ class MainFunction implements Show {
 }
 
 
-
 //////////////////
-///  Statement ///
+/// StateBlock ///
 //////////////////
-abstract class Statement implements Show {
-}
-
-class BlockStatement implements Show {
+class StatementBlock extends Statement {
     ArrayList<Statement> statements;
 
-    public BlockStatement(ArrayList<Statement> _statements) {
+    public StatementBlock() {
+        statements = new ArrayList<Statement>();
+    }
+
+    public StatementBlock(ArrayList<Statement> _statements) {
         statements = _statements;
+    }
+
+    public void addFront(StatementBlock sb) {
+        statements.addAll(0, sb.statements);
+    }
+
+    public void addFront(Statement statement) {
+        statements.add(0, statement);
+    }
+
+    public void addBack(StatementBlock sb) {
+        statements.addAll(sb.statements);
+    }
+    public void addBack(Statement statement) {
+        statements.add(statement);
     }
 
     public String toString(JsonShowHelper jsh) {
@@ -195,19 +208,19 @@ class VariableDeclaration extends Statement {
     Identifier id;
     Expression e;
 
-    public VariableDeclaration(Identifier _id, Expression _e) {
-        id = _id;
+    public VariableDeclaration(Token _id, Token type, Expression _e) {
+        id = new Identifier(_id);
         e = _e;
-        initSymbol(id.id.toString(), "const");
+        initSymbol(id.id.toString(), type.toString(), "const");
     }
 
-    public VariableDeclaration(Identifier _id) {
-        id = _id;
-        initSymbol(id.id.toString(), "var");
+    public VariableDeclaration(Token _id, Token type ) {
+        id = new Identifier(_id);
+        initSymbol(id.id.toString(), type.toString(), "var");
     }
 
-    void initSymbol(String name, String type) {
-        id.updateSymbol(new Symbol(name, type));
+    void initSymbol(String name, String type, String kind) {
+        id.updateSymbol(new Symbol(name, type, kind));
         SymbolTracker.getInstance().addSymbol(id.s);
     }
 
@@ -229,10 +242,10 @@ class VariableDeclaration extends Statement {
 //////////////////
 class IfStatement extends Statement {
     Expression test;
-    BlockStatement consequent;
-    BlockStatement alternate;
+    StatementBlock consequent;
+    StatementBlock alternate;
 
-    public IfStatement(Expression _test, BlockStatement _consequent, BlockStatement _alternate) {
+    public IfStatement(Expression _test, StatementBlock _consequent, StatementBlock _alternate) {
         test = _test;
         consequent = _consequent;
         alternate = _alternate;
@@ -253,9 +266,9 @@ class IfStatement extends Statement {
 //////////////////
 class WhileStatement extends Statement {
     Expression test;
-    BlockStatement body;
+    StatementBlock body;
 
-    public WhileStatement(Expression _test, BlockStatement _body) {
+    public WhileStatement(Expression _test, StatementBlock _body) {
         test = _test;
         body = _body;
     }
@@ -341,16 +354,17 @@ abstract class Expression implements Show, Typeable {
 /// AssignmentExpr ///
 //////////////////////
 class AssignmentExpression extends Expression {
-    private Expression e1, e2;
+    private Identifier id;
+    private Expression e;
 
-    AssignmentExpression(Expression _e1, Expression _e2) throws ParseException {
-        e1 = _e1;
-        e2 = _e2;
+    AssignmentExpression(Identifier _id, Expression _e) throws ParseException {
+        id = _id;
+        e = _e;
         checkValidity();
     }
 
     public Type getType() throws ParseException {
-        Type t1 = e1.getType(), t2 = e2.getType();
+        Type t1 = id.getType(), t2 = e.getType();
 
         if (t1 != Type.INVALID && t1 != Type.VOID && t1 == t2)
             return t1;
@@ -361,8 +375,8 @@ class AssignmentExpression extends Expression {
         return "{\n"
             + jsh.increase() + "\"type\": \"AssignmentExpression\",\n"
             + jsh.spaces + "\"operator\": \"=\",\n"
-            + jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
-            + jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
+            + jsh.spaces + "\"left\": " + id.toString(jsh) + ",\n"
+            + jsh.spaces + "\"right\": " + e.toString(jsh) + "\n"
             + jsh.decrease() + "}";
     }
 }
@@ -493,6 +507,11 @@ class CallExpression extends Expression {
     Identifier calee;
     ArrayList<Identifier> arguments;
 
+    public CallExpression(Identifier _calee, ArrayList<Identifier> _arguments) {
+        calee = _calee;
+        arguments = _arguments;
+    }
+
     public Type getType() throws ParseException { return Type.VOID; }
 
     public ArrayList<Type> getComplexType() throws ParseException { return new ArrayList<Type>(); }
@@ -535,6 +554,14 @@ class Identifier extends Expression {
 
     public void updateSymbol(Symbol _s) {
         s = _s;
+    }
+
+    public boolean isFunction() {
+        return s.kind.equals("function");
+    }
+
+    public boolean isConst() {
+        return s.kind.equals("const") || isFunction();
     }
 
     public Type getType() throws ParseException {

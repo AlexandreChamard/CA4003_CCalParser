@@ -6,6 +6,8 @@ IGNORE_CASE = true;
 
 PARSER_BEGIN(SyntaxChecker)
 
+import java.util.ArrayList;
+
 //////////////////
 ///    MAIN    ///
 //////////////////
@@ -70,7 +72,7 @@ public class SyntaxChecker {
                 return; // avoid error msg
         }
         try {
-            Expression e;
+            Show e;
             switch (mod) {
                 case "Program":
                     e = parser.Program();
@@ -123,27 +125,29 @@ SKIP : { /* COMMENTS */
 }
 
 TOKEN: {
-    <LP: "("> | <RP: ")">
-|   <LB: "{"> | <RB: "}">
-|   <ADD_OP: "+">
-|   <SUB_OP: "-">
+    "(" | ")"
+|   "{" | "}"
+|   "+"
+|   "-"
 |   <COMP_OP: "==" | "!=">
 |   <COMP_NUM_OP: "<" | "<=" | ">" | ">=">
 |   <LOGI_OP: "&&" | "||">
-|   <NOT_OP: "~">
-|   <EQ_OP: "=">
-|   <COL: ":">
-|   <SEMIC: ";">
-|   <BOOL_LIT:"true" | "false">
-|   <VAR_MOD: "var" | "const">
-|   <VOID: "void">
+|   "~"
+|   "="
+|   ","
+|   ":"
+|   ";"
+|   <BOOL_LIT: "true" | "false">
+|   "var"
+|   "const"
+|   "void"
 |   <VAR_TYPE: "boolean" | "integer">
-|   <MAIN: "main">
-|   <IF: "if">
-|   <ELSE: "else">
-|   <WHILE: "while">
-|   <SK: "skip">
-|   <RET: "return">
+|   "main"
+|   "if"
+|   "else"
+|   "while"
+|   "skip"
+|   "return"
 |   <NUM: (["1"-"9"] (["0"-"9"])* | "0")>
 |   <IDENTIFIER: ["a"-"z"] (["a"-"z"] | ["0"-"9"] | "_")*>
 }
@@ -152,14 +156,216 @@ TOKEN: {
 ENTRY POINT
 <Program> ::= <Condition> <EOF>
  */
-Expression Program(): {
+Program Program(): {
+    StatementBlock dl, fl;
+    MainFunction mf;
     SymbolTracker st = SymbolTracker.getInstance();
-    Expression e;
-
     st.newBlock();
 }
 {
-    e = Condition() <EOF> { st.deleteBlock(); return e; }
+    dl = DeclList()
+    fl = FunctionList()
+    mf = MainFunc()
+    <EOF> {
+        dl.addBack(fl);
+        st.deleteBlock();
+        return new Program(dl, mf);
+    }
+}
+
+StatementBlock DeclList(): {
+    Statement d;
+    StatementBlock ds;
+}
+{
+    d = Decl() ";" ds = DeclList()      { ds.addFront(d); return ds; }
+|                                       { return new StatementBlock(); }
+}
+
+VariableDeclaration Decl(): {
+    VariableDeclaration v;
+}
+{
+    v = VarDecl()                       { return v; }
+|   v = ConstDecl()                     { return v; }
+}
+
+VariableDeclaration VarDecl(): {
+    Token id, t;
+}
+{
+    "var" id = <IDENTIFIER> ":" t = <VAR_TYPE> { return new VariableDeclaration(id, t); }
+}
+
+VariableDeclaration ConstDecl(): {
+    Token id, t;
+    Expression e;
+}
+{
+    "const" id = <IDENTIFIER> ":" t = <VAR_TYPE> "=" e = PExpression() { return new VariableDeclaration(id, t, e); }
+}
+
+StatementBlock FunctionList(): {
+    Statement f;
+    StatementBlock fs;
+}
+{
+    f = Function() fs = FunctionList()  {fs.addFront(f); return fs; }
+|                                       { return new StatementBlock(); }
+}
+
+FunctionDeclaration Function(): {
+    Token t, id;
+    ArrayList<VariableDeclaration> ps;
+    StatementBlock dl, sb;
+    Expression r;
+
+    SymbolTracker st = SymbolTracker.getInstance();
+    st.newBlock();
+}
+{
+    t = <VAR_TYPE> id = <IDENTIFIER> "(" ps = ParamList() ")" "{"
+        dl = DeclList()
+        sb = StatementBlock()
+        "return" "(" r = PExpression() ")" ";"
+    "}" {
+        if (r.getType() != Typeable.stringToType(t.toString()))
+            throw new ParseException("return type does not match with function type.");
+        dl.addBack(sb);
+        dl.addBack(new ReturnStatement(r));
+        st.deleteBlock();
+        return new FunctionDeclaration(id, t.toString(), ps, dl);
+    }
+
+|   "void" id = <IDENTIFIER> "(" ps = ParamList() ")" "{"
+        dl = DeclList()
+        sb = StatementBlock()
+        "return" "(" ")" ";"
+    "}" {
+        dl.addBack(sb);
+        st.deleteBlock();
+        return new FunctionDeclaration(id, "void", ps, dl);
+    }
+}
+
+MainFunction MainFunc(): {
+    StatementBlock dl, sb;
+
+    SymbolTracker st = SymbolTracker.getInstance();
+    st.newBlock();
+}
+{
+    "main" "{"
+        dl = DeclList()
+        sb = StatementBlock()
+    "}" {
+        dl.addBack(sb);
+        st.deleteBlock();
+        return new MainFunction(dl);
+    }
+}
+
+ArrayList<VariableDeclaration> ParamList(): {
+    ArrayList<VariableDeclaration> ps;
+}
+{
+    ps = NempParameterList()    { return ps; }
+|                               { return new ArrayList<VariableDeclaration>(); }
+}
+
+ArrayList<VariableDeclaration> NempParameterList(): {
+    Token id, t;
+    ArrayList<VariableDeclaration> ps;
+}
+{
+    id = <IDENTIFIER> ":" t = <VAR_TYPE> ps = NempParameterList1() { ps.add(0, new VariableDeclaration(id, t)); return ps; }
+}
+
+ArrayList<VariableDeclaration> NempParameterList1(): {
+    ArrayList<VariableDeclaration> ps;
+}
+{
+    "," ps = NempParameterList()    { return ps; }
+|                                   { return new ArrayList<VariableDeclaration>(); }
+}
+
+StatementBlock StatementBlock(): {
+    StatementBlock sb;
+    Statement s;
+
+    SymbolTracker st = SymbolTracker.getInstance();
+    st.newBlock();
+}
+{
+    s = Statement() sb = StatementBlock()   { sb.addFront(s); st.deleteBlock(); return sb; }
+|                                           { st.deleteBlock(); return new StatementBlock(); }
+}
+
+Statement Statement(): {
+    Token id;
+    Statement s;
+}
+{
+    id = <IDENTIFIER> s = Statement1(new Identifier(id))    { return s; }
+|   "{" s = StatementBlock() "}"                            { return s; }
+|   s = IfStatement()                                       { return s; }
+|   s = WhileStatement()                                    { return s; }
+|   "skip " ";"                                             { return new SkipStatement(); }
+}
+
+IfStatement IfStatement(): {
+    Expression c;
+    StatementBlock sb, sb1;
+
+    SymbolTracker st = SymbolTracker.getInstance();
+    st.newBlock();
+}
+{
+    "if" c = PCondition() "{" sb = StatementBlock() "}" "else" "{" sb1 = StatementBlock() "}"    { st.deleteBlock(); return new IfStatement(c, sb, sb1); }
+}
+
+WhileStatement WhileStatement(): {
+    Expression c;
+    StatementBlock sb;
+
+    SymbolTracker st = SymbolTracker.getInstance();
+    st.newBlock();
+}
+{
+    "while" c = PCondition() "{" sb = StatementBlock() "}"  { st.deleteBlock(); return new WhileStatement(c, sb); }
+}
+
+Statement Statement1(Identifier id): {
+    Expression e;
+    ArrayList<Identifier> args;
+}
+{
+    "=" e = PExpression() ";"        { return new ExpressionStatement(new AssignmentExpression(id, e)); }
+|   "(" args = ArgList() ")" ";"    { return new ExpressionStatement(new CallExpression(id, args)); }
+}
+
+ArrayList<Identifier> ArgList(): {
+    ArrayList<Identifier> args;
+}
+{
+    args = NempArgList()    { return args; }
+|                           { return new ArrayList<Identifier>(); }
+}
+
+ArrayList<Identifier> NempArgList(): {
+    Token arg;
+    ArrayList<Identifier> args;
+}
+{
+    arg = <IDENTIFIER> args = NempArgList1()    { args.add(0, new Identifier(arg)); return args; }
+}
+
+ArrayList<Identifier> NempArgList1(): {
+    ArrayList<Identifier> args;
+}
+{
+    "," args = NempArgList()    { return args;}
+|                               { return new ArrayList<Identifier>(); }
 }
 
 /**
@@ -213,7 +419,7 @@ Expression Condition1(): {
     Expression e1;
 }
 {
-    <NOT_OP> e1 = Comparison() { return new UnaryExpression("~", e1); }
+    "~" e1 = Comparison() { return new UnaryExpression("~", e1); }
 |    e1 = Comparison() { return e1; }
 }
 
@@ -297,8 +503,8 @@ Expression Expression_(Expression e1): {
     Expression e2, ef;
 }
 {
-    <ADD_OP> e2 = Fragment() ef = Expression_(new BinaryExpression("+", e1, e2)) { return ef;}
-|   <SUB_OP> e2 = Fragment() ef = Expression_(new BinaryExpression("-", e1, e2)) { return ef;}
+    "+" e2 = Fragment() ef = Expression_(new BinaryExpression("+", e1, e2)) { return ef;}
+|   "-" e2 = Fragment() ef = Expression_(new BinaryExpression("-", e1, e2)) { return ef;}
 |   { return e1; }
 }
 
@@ -314,9 +520,9 @@ Expression Fragment(): {
 }
 {
     e = SubFragment()           { return e; }
-|   <SUB_OP> e = SubFragment()  { return new UnaryExpression("-", e); }
+|   "-" e = SubFragment()       { return new UnaryExpression("-", e); }
 |   t = <BOOL_LIT>              { return new Bool(t.toString().equals("true")); }
-|   <LP> e = Condition() <RP>   { return e; }
+|   "(" e = Condition() ")"     { return e; }
 }
 
 /**

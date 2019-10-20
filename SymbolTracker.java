@@ -91,15 +91,15 @@ class SymbolTracker {
         SymbolTracker st = new SymbolTracker();
 
         st.newBlock();
-        st.addSymbol(new Symbol("a", "int"));
-        st.addSymbol(new Symbol("b", "bool"));
+        st.addSymbol(new Symbol("a", "int", "var"));
+        st.addSymbol(new Symbol("b", "bool", "var"));
 
         System.out.println("a: "+symbolToString(st.getSymbol("a")));
         System.out.println("b: "+symbolToString(st.getSymbol("b")));
 
         st.newBlock();
 
-        st.addSymbol(new Symbol("a", "String"));
+        st.addSymbol(new Symbol("a", "String", "var"));
 
         System.out.println("a: "+symbolToString(st.getSymbol("a")));
         System.out.println("b: "+symbolToString(st.getSymbol("b")));
