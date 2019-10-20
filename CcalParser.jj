@@ -10,33 +10,81 @@ PARSER_BEGIN(SyntaxChecker)
 ///    MAIN    ///
 //////////////////
 public class SyntaxChecker {
-    public static void main(String[] args) {
-        SyntaxChecker parser;
-
-        if (args.length == 0) {
-            System.out.println("SLP Parser: Reading from standard input . . .");
-            parser = new SyntaxChecker(System.in);
-        } else if (args.length == 1 && args[0].equals("-h") == false && args[0].equals("--help") == false) {
-            try {
-                parser = new SyntaxChecker(new java.io.FileInputStream(args[0]));
-            } catch (java.io.FileNotFoundException e) {
-                System.out.println("SLP Parser: File " + args[0] + " not found.");
-                System.exit(1);
-                return;
-            }
-
-        } else {
-
+    static void help() {
             System.out.println("");
             System.out.println("USAGE:");
-            System.out.println("\tjava SyntaxChecker [inputfile.ccal]");
+            System.out.println("\tjava SyntaxChecker [inputfile.ccal] [--debug [Expression | Condition]]");
             System.out.println("");
-            return;
+            System.out.println("  -h --help:\tshow help.");
+            System.out.println("  --debug:\tparse only the given type.");
+            System.out.println("");
+    }
 
+    static int parseArgs(String[] args) {
+        if (args.length == 0)
+            return 1; // get input from prompt
+        if (args[0].equals("-h") || args[0].equals("--help"))
+            return 4; // show help
+        if (args.length == 1)
+            return 3; // default program
+        if (args.length == 2 && args[0].equals("--debug"))
+            return 0; // get input from prompt + use debug feature
+        if (args.length == 3 && args[1].equals("--debug"))
+            return 2; // use debug feature
+        return -1; // show help and return 2
+    }
+
+    static void invalidArgument(String msg) {
+        System.out.println("Error: "+msg);
+        help();
+        System.exit(2);
+    }
+
+    public static void main(String[] args) {
+        SyntaxChecker parser;
+        String mod = "Program";
+
+        switch (parseArgs(args)) {
+            case 0: // get input from prompt + use debug feature
+                mod = args[1];
+            case 1: // get input from prompt
+                System.out.println("SLP Parser: Reading from standard input...");
+                parser = new SyntaxChecker(System.in);
+                break;
+            case 2: // use debug feature
+                mod = args[2];
+            case 3: // default program
+                try {
+                    parser = new SyntaxChecker(new java.io.FileInputStream(args[0]));
+                } catch (java.io.FileNotFoundException e) {
+                    System.out.println("SLP Parser: File " + args[0] + " not found.");
+                    System.exit(1);
+                    return; // avoid error msg
+                }
+                break;
+            case 4: // show help
+                help();
+                return;
+            default: // invalid arguments
+                invalidArgument("invalid arguments.");
+                return; // avoid error msg
         }
-
         try {
-            Expression e = parser.Program();
+            Expression e;
+            switch (mod) {
+                case "Program":
+                    e = parser.Program();
+                    break;
+                case "Condition":
+                    e = parser.PCondition();
+                    break;
+                case "Expression":
+                    e = parser.PExpression();
+                    break;
+                default:
+                    invalidArgument("invalid debug mod.");
+                    return; // avoid error msg
+            }
             System.out.println(e.toString(new JsonShowHelper()));
             System.out.println("Syntax is okay");
         } catch (Throwable e) {
@@ -99,7 +147,7 @@ TOKEN: {
 
 /**
 ENTRY POINT
-<Program> ::= <Condition>
+<Program> ::= <Condition> <EOF>
  */
 Expression Program(): {
     SymbolTracker st = SymbolTracker.getInstance();
@@ -109,6 +157,38 @@ Expression Program(): {
 }
 {
     e = Condition() <EOF> { st.deleteBlock(); return e; }
+}
+
+/**
+subject condition
+<PCondition> ::= <Condition> <EOF>
+ */
+Expression PCondition(): {
+    Expression e;
+}
+{
+    e = Condition() {
+        if (e.getType() != Type.BOOLEAN || e.isLiteral() == true)
+            throw new ParseException("invalid condition.");
+        return e;
+    }
+}
+
+/**
+subject Expression
+<PExpression> ::= <Expression> <EOF>
+ */
+Expression PExpression(): {
+    Expression e;
+}
+{
+    e = Expression() {
+        Type t = e.getType();
+        if ((t != Type.INTEGER && t != Type.BOOLEAN)
+        || (t == Type.BOOLEAN && e.isLiteral() == false))
+            throw new ParseException("invalid expression.");
+        return e;
+    }
 }
 
 
