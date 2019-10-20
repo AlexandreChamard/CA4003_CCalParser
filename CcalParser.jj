@@ -72,7 +72,7 @@ public class SyntaxChecker {
                 return; // avoid error msg
         }
         try {
-            Show e;
+            Showable e;
             switch (mod) {
                 case "Program":
                     e = parser.Program();

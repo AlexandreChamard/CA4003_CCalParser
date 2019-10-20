@@ -1,7 +1,7 @@
 
 import java.util.ArrayList;
 
-interface Show {
+interface Showable {
     String toString(JsonShowHelper jsh);
 }
 
@@ -69,7 +69,7 @@ class Symbol {
 //////////////////
 ///   Program  ///
 //////////////////
-class Program implements Show {
+class Program implements Showable {
     private StatementBlock statements;
 
     public Program(StatementBlock _statements) {
@@ -89,7 +89,7 @@ class Program implements Show {
 //////////////////
 ///  Statement ///
 //////////////////
-abstract class Statement implements Show {
+abstract class Statement implements Showable {
 }
 
 ////////////////////
@@ -334,7 +334,7 @@ class ExpressionStatement extends Statement {
 //////////////////
 ///    Expr    ///
 //////////////////
-abstract class Expression implements Show, Typeable {
+abstract class Expression implements Showable, Typeable {
     public ArrayList<Type> getComplexType() throws ParseException {
         return new ArrayList<Type>();
     }
