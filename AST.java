@@ -71,18 +71,15 @@ class Symbol {
 //////////////////
 class Program implements Show {
     private StatementBlock statements;
-    private MainFunction main;
 
-    public Program(StatementBlock _statements, MainFunction _main) {
+    public Program(StatementBlock _statements) {
         statements = _statements;
-        main = _main;
     }
 
     public String toString(JsonShowHelper jsh) {
         return "\"Program\": {\n"
             + jsh.increase() + "\"type\": \"Program\",\n"
-            + jsh.spaces + "\"body\": " + statements.toString(jsh) + ",\n"
-            + jsh.spaces + "\"main\": " + main.toString(jsh) + "\n"
+            + jsh.spaces + "\"body\": " + statements.toString(jsh) + "\n"
             + jsh.decrease() + "}";
     }
 }

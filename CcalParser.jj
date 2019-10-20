@@ -168,8 +168,9 @@ Program Program(): {
     mf = MainFunc()
     <EOF> {
         dl.addBack(fl);
+        dl.addBack(mf);
         st.deleteBlock();
-        return new Program(dl, mf);
+        return new Program(dl);
     }
 }
 
