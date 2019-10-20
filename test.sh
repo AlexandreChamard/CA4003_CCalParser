@@ -23,7 +23,7 @@ function test() {
     echo "============================"
     echo 
     echo "${f}: ${call} ${filename}"
-    ${call} "${filename}" > "${file}"
+    ${call} "${filename}" --debug "${parse}" > "${file}"
     if [[ ${?} -ne 0 ]];then
         if [[ "$(< ${testfile})" != "error" ]]; then
             i=$((i + 1))
@@ -39,11 +39,14 @@ function test() {
     cat "${file}"
 }
 
-for f in $(find ${testsdir}/ -maxdepth 1 -mindepth 1 -type d | sort);do
-    test
+for folder in $(find ${testsdir}/ -maxdepth 1 -mindepth 1 -type d | sort);do
+    parse=$(basename ${folder})
+    for f in $(find ${folder}/ -maxdepth 1 -mindepth 1 -type d | sort);do
+        test
+    done
 done
 
-rm "${file}"
+rm -f "${file}"
 
 echo 
 echo "============================"

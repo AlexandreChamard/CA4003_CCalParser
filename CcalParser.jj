@@ -76,10 +76,13 @@ public class SyntaxChecker {
                     e = parser.Program();
                     break;
                 case "Condition":
-                    e = parser.PCondition();
+                    e = parser.DCondition();
                     break;
                 case "Expression":
-                    e = parser.PExpression();
+                    e = parser.DExpression();
+                    break;
+                case "Identifier":
+                    e = parser.SubFragment();
                     break;
                 default:
                     invalidArgument("invalid debug mod.");
@@ -326,4 +329,21 @@ Expression SubFragment(): {
 {
     t = <IDENTIFIER>            { return new Identifier(t); }
 |   t = <NUM>                   { return new Number(t.toString()); }
+}
+
+/**
+DEBUG
+ */
+Expression DExpression(): {
+    Expression e;
+}
+{
+    e = PExpression() <EOF> { return e; }
+}
+
+Expression DCondition(): {
+    Expression e;
+}
+{
+    e = PCondition() <EOF> { return e; }
 }
