@@ -17,15 +17,44 @@ interface Typeable {
     Type getType() throws ParseException;
     ArrayList<Type> getComplexType() throws ParseException;
     boolean isLiteral();
+
+    static String typeToString(Type t) {
+        switch (t) {
+            case BOOLEAN:
+                return "boolean";
+            case INTEGER:
+                return "integer";
+            case VOID:
+                return "void";
+            default:
+                return "invalid";
+        }
+    }
+
+    static Type stringToType(String s) {
+        switch (s) {
+            case "boolean":
+                return Type.BOOLEAN;
+            case "integer":
+                return Type.INTEGER;
+            default:
+                return Type.INVALID;
+        }
+    }
 }
 
 class Symbol {
     String name;
-    String type;
+    Type type;
+
+    public Symbol(String _name, Type _type) {
+        name = _name;
+        type = _type;
+    }
 
     public Symbol(String _name, String _type) {
         name = _name;
-        type = _type;
+        type = Typeable.stringToType(_type);
     }
 
     public String toString() { // debug
@@ -76,16 +105,24 @@ class FunctionDeclaration implements Show {
     ArrayList<Identifier> params;
     BlockStatement statements;
 
-    public FunctionDeclaration(Identifier _id, ArrayList<Identifier> _params, BlockStatement _statements) {
+    public FunctionDeclaration(Identifier _id, Token type, ArrayList<Identifier> _params, BlockStatement _statements) {
         id = _id;
         params = _params;
         statements = _statements;
+
+        initSymbol(id.id.toString(), type.toString());
+    }
+
+    public void initSymbol(String name, String type) {
+        id.updateSymbol(new Symbol(name, type));
+        SymbolTracker.getInstance().addSymbol(id.s);
     }
 
     public String toString(JsonShowHelper jsh) {
         String str = "{\n"
             + jsh.increase() + "\"type\": \"FunctionDeclaration\",\n"
-            + jsh.spaces + "\"id\": \"" + id + "\",\n";
+            + jsh.spaces + "\"id\": \"" + id.toString(jsh) + "\",\n"
+            + jsh.spaces + "\"return\": \"" + id.s.type + "\",\n";
 
         str += jsh.spaces + "\"params\": [\n";
         jsh.increase();
@@ -157,7 +194,6 @@ class BlockStatement implements Show {
 class VariableDeclaration extends Statement {
     Identifier id;
     Expression e;
-    Symbol s;
 
     public VariableDeclaration(Identifier _id, Expression _e) {
         id = _id;
@@ -171,8 +207,8 @@ class VariableDeclaration extends Statement {
     }
 
     void initSymbol(String name, String type) {
-        s = new Symbol(name, type);
-        SymbolTracker.getInstance().addSymbol(s);
+        id.updateSymbol(new Symbol(name, type));
+        SymbolTracker.getInstance().addSymbol(id.s);
     }
 
     public String toString(JsonShowHelper jsh) {
@@ -182,7 +218,7 @@ class VariableDeclaration extends Statement {
         if (e != null) {
             str += jsh.spaces + "\"init\": " + e.toString(jsh) + ",\n";
         }
-        str += jsh.spaces + "\"kind\": " + s.type + "\n"
+        str += jsh.spaces + "\"kind\": " + id.s.type + "\n"
             + jsh.decrease() + "}";
         return str;
     }
@@ -486,14 +522,25 @@ class CallExpression extends Expression {
 //////////////////
 class Identifier extends Expression {
     public Token id;
+    public Symbol s;
 
     Identifier(Token _id) {
         id = _id;
     }
 
+    Identifier(Token _id, Symbol _s) {
+        id = _id;
+        s = _s;
+    }
+
+    public void updateSymbol(Symbol _s) {
+        s = _s;
+    }
+
     public Type getType() throws ParseException {
-        /** check in identifier hashtable */
-        return Type.VOID;
+        if (s == null)
+            throw new ParseException("identifier "+s+" is not bind to anything.");
+        return s.type;
     }
 
     public String toString(JsonShowHelper jsh) {

@@ -27,11 +27,11 @@ class SymbolTracker {
         l.push(s);
     }
 
-    public Symbol getSymbol(String key) throws RuntimeException {
+    public Symbol getSymbol(String key) {
         LinkedList<Symbol> l = symTracker.get(key);
 
         if (l == null)
-            throw new RuntimeException("Symbol "+key+" not found.");
+            return null;
         for (Symbol s : l) {
             if (s.name.equals(key)) {
                 if (l.peek() != s) { // put the found symbol at the top
@@ -41,7 +41,7 @@ class SymbolTracker {
                 return s;
             }
         }
-        throw new RuntimeException("Symbol "+key+" not found.");
+        return null;
     }
 
     protected void remove(String key) throws RuntimeException {
