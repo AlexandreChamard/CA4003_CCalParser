@@ -154,7 +154,7 @@ TOKEN: {
 
 /**
 ENTRY POINT
-<Program> ::= <Condition> <EOF>
+<program> ::= <decl_list> <function_list> <main> <EOF>
  */
 Program Program(): {
     StatementBlock dl, fl;
@@ -174,6 +174,10 @@ Program Program(): {
     }
 }
 
+/**
+<decl_list> ::= <decl> ; <decl_list>
+<decl_list> ::= ɛ
+ */
 StatementBlock DeclList(): {
     Statement d;
     StatementBlock ds;
@@ -183,6 +187,10 @@ StatementBlock DeclList(): {
 |                                       { return new StatementBlock(); }
 }
 
+/**
+<decl> ::= <var_decl>
+<decl> ::= <const_decl>
+ */
 VariableDeclaration Decl(): {
     VariableDeclaration v;
 }
@@ -191,6 +199,9 @@ VariableDeclaration Decl(): {
 |   v = ConstDecl()                     { return v; }
 }
 
+/**
+<var_decl> ::= var identifier : (integer | boolean)
+ */
 VariableDeclaration VarDecl(): {
     Token id, t;
 }
@@ -198,6 +209,9 @@ VariableDeclaration VarDecl(): {
     "var" id = <IDENTIFIER> ":" t = <VAR_TYPE> { return new VariableDeclaration(id, t); }
 }
 
+/**
+<const_decl> ::= const identifier : (integer | boolean) = <Expression>
+ */
 VariableDeclaration ConstDecl(): {
     Token id, t;
     Expression e;
@@ -206,6 +220,10 @@ VariableDeclaration ConstDecl(): {
     "const" id = <IDENTIFIER> ":" t = <VAR_TYPE> "=" e = PExpression() { return new VariableDeclaration(id, t, e); }
 }
 
+/**
+<function_list> ::= <function> <function_list>
+<function_list> ::= ɛ
+ */
 StatementBlock FunctionList(): {
     Statement f;
     StatementBlock fs;
@@ -215,6 +233,10 @@ StatementBlock FunctionList(): {
 |                                       { return new StatementBlock(); }
 }
 
+/**
+<function> ::= (integer | boolean) identifier \( <param_list> \) { <decl_list> <statement_block> return \( <expression> \) ; }
+<function> ::= void identifier \( <param_list> \) { <decl_list> <statement_block> return \( \) ; }
+ */
 FunctionDeclaration Function(): {
     Token t, id;
     ArrayList<VariableDeclaration> ps;
@@ -249,6 +271,9 @@ FunctionDeclaration Function(): {
     }
 }
 
+/**
+<main> ::= main { <decl_list> <statement_block> }
+ */
 MainFunction MainFunc(): {
     StatementBlock dl, sb;
 
@@ -266,6 +291,10 @@ MainFunction MainFunc(): {
     }
 }
 
+/**
+<param_list> ::= <nemp_param_list>
+<param_list> ::= ɛ
+ */
 ArrayList<VariableDeclaration> ParamList(): {
     ArrayList<VariableDeclaration> ps;
 }
@@ -274,6 +303,9 @@ ArrayList<VariableDeclaration> ParamList(): {
 |                               { return new ArrayList<VariableDeclaration>(); }
 }
 
+/**
+<nemp_param_list> ::= identifier : (integer | boolean) <nemp_param_list1>
+ */
 ArrayList<VariableDeclaration> NempParameterList(): {
     Token id, t;
     ArrayList<VariableDeclaration> ps;
@@ -282,6 +314,10 @@ ArrayList<VariableDeclaration> NempParameterList(): {
     id = <IDENTIFIER> ":" t = <VAR_TYPE> ps = NempParameterList1() { ps.add(0, new VariableDeclaration(id, t)); return ps; }
 }
 
+/**
+<nemp_param_list1> ::= , <nemp_param_list1>
+<nemp_param_list1> ::= ɛ
+ */
 ArrayList<VariableDeclaration> NempParameterList1(): {
     ArrayList<VariableDeclaration> ps;
 }
@@ -290,6 +326,10 @@ ArrayList<VariableDeclaration> NempParameterList1(): {
 |                                   { return new ArrayList<VariableDeclaration>(); }
 }
 
+/**
+<statement_block> ::= <statement> <statement_block>
+<statement_block> ::= ɛ
+ */
 StatementBlock StatementBlock(): {
     StatementBlock sb;
     Statement s;
@@ -302,6 +342,13 @@ StatementBlock StatementBlock(): {
 |                                           { st.deleteBlock(); return new StatementBlock(); }
 }
 
+/**
+<statement> ::= identifier <statement1>
+<statement> ::= { <statement_block> }
+<statement> ::= <if_statement>
+<statement> ::= <while_statement>
+<statement> ::= <skip_statement>
+ */
 Statement Statement(): {
     Token id;
     Statement s;
@@ -314,6 +361,22 @@ Statement Statement(): {
 |   "skip " ";"                                             { return new SkipStatement(); }
 }
 
+/**
+<statement1> ::= = <expression> ;
+<statement1> ::= = \( <arg_list> \) ;
+ */
+Statement Statement1(Identifier id): {
+    Expression e;
+    ArrayList<Identifier> args;
+}
+{
+    "=" e = PExpression() ";"        { return new ExpressionStatement(new AssignmentExpression(id, e)); }
+|   "(" args = ArgList() ")" ";"    { return new ExpressionStatement(new CallExpression(id, args)); }
+}
+
+/**
+<if_statement> ::= if <condition> { <statement_block } else { <statement_block> }
+ */
 IfStatement IfStatement(): {
     Expression c;
     StatementBlock sb, sb1;
@@ -325,6 +388,9 @@ IfStatement IfStatement(): {
     "if" c = PCondition() "{" sb = StatementBlock() "}" "else" "{" sb1 = StatementBlock() "}"    { st.deleteBlock(); return new IfStatement(c, sb, sb1); }
 }
 
+/**
+<while_statement> ::= while <condition> { <statement_block> }
+ */
 WhileStatement WhileStatement(): {
     Expression c;
     StatementBlock sb;
@@ -336,15 +402,10 @@ WhileStatement WhileStatement(): {
     "while" c = PCondition() "{" sb = StatementBlock() "}"  { st.deleteBlock(); return new WhileStatement(c, sb); }
 }
 
-Statement Statement1(Identifier id): {
-    Expression e;
-    ArrayList<Identifier> args;
-}
-{
-    "=" e = PExpression() ";"        { return new ExpressionStatement(new AssignmentExpression(id, e)); }
-|   "(" args = ArgList() ")" ";"    { return new ExpressionStatement(new CallExpression(id, args)); }
-}
-
+/**
+<arg_list> ::= <nemp_arg_list>
+<arg_list> ::= ɛ
+ */
 ArrayList<Identifier> ArgList(): {
     ArrayList<Identifier> args;
 }
@@ -353,6 +414,9 @@ ArrayList<Identifier> ArgList(): {
 |                           { return new ArrayList<Identifier>(); }
 }
 
+/**
+<arg_list> ::= identifier <nemp_arg_list1>
+ */
 ArrayList<Identifier> NempArgList(): {
     Token arg;
     ArrayList<Identifier> args;
@@ -361,6 +425,9 @@ ArrayList<Identifier> NempArgList(): {
     arg = <IDENTIFIER> args = NempArgList1()    { args.add(0, new Identifier(arg)); return args; }
 }
 
+/**
+<nemp_arg_list1> ::= , <nemp_arg_list>
+ */
 ArrayList<Identifier> NempArgList1(): {
     ArrayList<Identifier> args;
 }
@@ -370,8 +437,9 @@ ArrayList<Identifier> NempArgList1(): {
 }
 
 /**
+<condition> ::= <condition>
 subject condition
-<PCondition> ::= <Condition> <EOF>
+does not really exist. Used only to check if <condition> is valid.
  */
 Expression PCondition(): {
     Expression e;
@@ -385,8 +453,9 @@ Expression PCondition(): {
 }
 
 /**
+<expression> ::= <expression>
 subject Expression
-<PExpression> ::= <Expression> <EOF>
+does not really exist. Used only to check if <expression> is valid.
  */
 Expression PExpression(): {
     Expression e;
@@ -403,7 +472,7 @@ Expression PExpression(): {
 
 
 /**
-<Condition> ::= <Condition1> <Condition_>
+<condition> ::= <condition1> <condition_>
  */
 Expression Condition(): {
     Expression e1, e2;
@@ -413,8 +482,8 @@ Expression Condition(): {
 }
 
 /**
-<Condition1> ::= ~ <Comparison>
-<Condition1> ::= <Comparison>
+<condition1> ::= ~ <comparison>
+<condition1> ::= <comparison>
  */
 Expression Condition1(): {
     Expression e1;
@@ -425,8 +494,9 @@ Expression Condition1(): {
 }
 
 /**
-<Condition_> ::= && <Comparison> <Condition_>
-<Condition_> ::= || <Comparison> <Condition_>
+<condition_> ::= && <comparison> <condition_>
+<condition_> ::= || <comparison> <condition_>
+<condition_> ::= ɛ
  */
 Expression Condition_(Expression e1): {
     Token t;
@@ -439,7 +509,7 @@ Expression Condition_(Expression e1): {
 
 
 /**
-<Comparison> ::= <NumComparison> <Comparison_>
+<comparison> ::= <num_comparison> <comparison_>
  */
 Expression Comparison(): {
     Expression e1, e2;
@@ -449,8 +519,9 @@ Expression Comparison(): {
 }
 
 /**
-<Comparison_> ::= == <NumComparison> <Comparison_>
-<Comparison_> ::= != <NumComparison> <Comparison_>
+<comparison_> ::= == <num_comparison> <comparison_>
+<comparison_> ::= != <num_comparison> <comparison_>
+<comparison_> ::= ɛ
  */
 Expression Comparison_(Expression e1): {
     Token t;
@@ -462,7 +533,7 @@ Expression Comparison_(Expression e1): {
 }
 
 /**
-<NumComparison> ::= <Expression> <NumComparison_>
+<num_comparison> ::= <expression> <num_comparison_>
  */
 Expression NumComparison(): {
     Expression e1, e2;
@@ -472,10 +543,11 @@ Expression NumComparison(): {
 }
 
 /**
-<NumComparison_> ::= <  <NumComparison> <NumComparison_>
-<NumComparison_> ::= <= <NumComparison> <NumComparison_>
-<NumComparison_> ::= >  <NumComparison> <NumComparison_>
-<NumComparison_> ::= >= <NumComparison> <NumComparison_>
+<num_comparison_> ::= <  <num_comparison> <num_comparison_>
+<num_comparison_> ::= <= <num_comparison> <num_comparison_>
+<num_comparison_> ::= >  <num_comparison> <num_comparison_>
+<num_comparison_> ::= >= <num_comparison> <num_comparison_>
+<num_comparison_> ::= ɛ
  */
 Expression NumComparison_(Expression e1): {
     Token t;
@@ -487,7 +559,7 @@ Expression NumComparison_(Expression e1): {
 }
 
 /**
-<Expression> ::= <Fragment> <Expression_>
+<expression> ::= <fragment> <expression_>
  */
 Expression Expression(): {
     Expression e1, e2;
@@ -497,8 +569,9 @@ Expression Expression(): {
 }
 
 /**
-<Expression_> ::= + <Fragment> <Expression_>
-<Expression_> ::= - <Fragment> <Expression_>
+<expression_> ::= + <fragment> <expression_>
+<expression_> ::= - <fragment> <expression_>
+<expression_> ::= ɛ
  */
 Expression Expression_(Expression e1): {
     Expression e2, ef;
@@ -510,10 +583,10 @@ Expression Expression_(Expression e1): {
 }
 
 /**
-<Fragment> ::= <SubFragment>
-<Fragment> ::= - <SubFragment>
-<Fragment> ::= Bool_Lit
-<Fragment> ::= ( <Condition> )
+<fragment> ::= <sub_fragment>
+<fragment> ::= - <sub_fragment>
+<fragment> ::= (true | false)
+<fragment> ::= \( <condition> \)
  */
 Expression Fragment(): {
     Token t;
@@ -527,8 +600,8 @@ Expression Fragment(): {
 }
 
 /**
-<SubFragment> ::= Identifier
-<SubFragment> ::= Number
+<sub_fragment> ::= identifier
+<sub_fragment> ::= number
  */
 Expression SubFragment(): {
     Token t;
