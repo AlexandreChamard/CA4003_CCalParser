@@ -1,0 +1,28 @@
+
+integer fib(i:integer) {
+  const i1:integer = i - 1;
+  const i2:integer = i - 2;
+  var result:integer;
+
+  if (i == 0) {
+    result = 1;
+  } else {
+    if (i == 1) {
+      result = 1;
+    } else {
+      result = fib(i1) + fib(i2);
+    }
+  }
+  return (result);
+}
+
+main {
+  const i:integer = 3;
+  var result:integer;
+
+  if (i >= 0) {
+    result = fib(i);
+  } else {
+    skip;
+  }
+}

@@ -1,0 +1,10 @@
+
+void f() {
+  return ();
+}
+
+main() {
+  const i:integer = 42;
+
+  F(I);
+}

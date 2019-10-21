@@ -239,6 +239,7 @@ StatementBlock FunctionList(): {
  */
 FunctionDeclaration Function(): {
     Token t, id;
+    Symbol s;
     ArrayList<VariableDeclaration> ps;
     StatementBlock dl, sb;
     Expression r;
@@ -247,7 +248,8 @@ FunctionDeclaration Function(): {
     st.newBlock();
 }
 {
-    t = <VAR_TYPE> id = <IDENTIFIER> "(" ps = ParamList() ")" "{"
+    t = <VAR_TYPE> id = <IDENTIFIER> "(" ps = ParamList() ")" { s = new Symbol(id.toString(), t.toString(), ps, "function"); st.addSymbol(s); }
+    "{" 
         dl = DeclList()
         sb = StatementBlock()
         "return" "(" r = PExpression() ")" ";"
@@ -257,17 +259,18 @@ FunctionDeclaration Function(): {
         dl.addBack(sb);
         dl.addBack(new ReturnStatement(r));
         st.deleteBlock();
-        return new FunctionDeclaration(id, t.toString(), ps, dl);
+        return new FunctionDeclaration(id, s, ps, dl);
     }
 
-|   "void" id = <IDENTIFIER> "(" ps = ParamList() ")" "{"
+|   "void" id = <IDENTIFIER> "(" ps = ParamList() ")" { s = new Symbol(id.toString(), "void", ps, "function"); st.addSymbol(s); }
+    "{"
         dl = DeclList()
         sb = StatementBlock()
         "return" "(" ")" ";"
     "}" {
         dl.addBack(sb);
         st.deleteBlock();
-        return new FunctionDeclaration(id, "void", ps, dl);
+        return new FunctionDeclaration(id, s, ps, dl);
     }
 }
 

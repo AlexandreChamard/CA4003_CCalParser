@@ -1,0 +1,268 @@
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "id": {
+        "type": "Identifier",
+        "name": "fib"
+      },
+      "return_type": "integer",
+      "params": [
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "i"
+          },
+          "var_type": "integer",
+          "kind": "var"
+        }
+      ],
+      "body": [
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "i1"
+          },
+          "init": {
+            "type": "BinaryExpression",
+            "operator": "-",
+            "left": {
+              "type": "Identifier",
+              "name": "i"
+            },
+            "right": {
+              "type": "Literal",
+              "value": 1
+            }
+          },
+          "var_type": "integer",
+          "kind": "const"
+        },
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "i2"
+          },
+          "init": {
+            "type": "BinaryExpression",
+            "operator": "-",
+            "left": {
+              "type": "Identifier",
+              "name": "i"
+            },
+            "right": {
+              "type": "Literal",
+              "value": 2
+            }
+          },
+          "var_type": "integer",
+          "kind": "const"
+        },
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "result"
+          },
+          "var_type": "integer",
+          "kind": "var"
+        },
+        {
+          "type": "IfStatement",
+          "test": {
+            "type": "BinaryExpression",
+            "operator": "==",
+            "left": {
+              "type": "Identifier",
+              "name": "i"
+            },
+            "right": {
+              "type": "Literal",
+              "value": 0
+            }
+          },
+          "consequent": [
+            {
+              "type": "ExpressionStatement",
+              "expression": {
+                "type": "AssignmentExpression",
+                "operator": "=",
+                "left": {
+                  "type": "Identifier",
+                  "name": "result"
+                },
+                "right": {
+                  "type": "Literal",
+                  "value": 1
+                }
+              }
+            }
+          ],
+          "alternate": [
+            {
+              "type": "IfStatement",
+              "test": {
+                "type": "BinaryExpression",
+                "operator": "==",
+                "left": {
+                  "type": "Identifier",
+                  "name": "i"
+                },
+                "right": {
+                  "type": "Literal",
+                  "value": 1
+                }
+              },
+              "consequent": [
+                {
+                  "type": "ExpressionStatement",
+                  "expression": {
+                    "type": "AssignmentExpression",
+                    "operator": "=",
+                    "left": {
+                      "type": "Identifier",
+                      "name": "result"
+                    },
+                    "right": {
+                      "type": "Literal",
+                      "value": 1
+                    }
+                  }
+                }
+              ],
+              "alternate": [
+                {
+                  "type": "ExpressionStatement",
+                  "expression": {
+                    "type": "AssignmentExpression",
+                    "operator": "=",
+                    "left": {
+                      "type": "Identifier",
+                      "name": "result"
+                    },
+                    "right": {
+                      "type": "BinaryExpression",
+                      "operator": "+",
+                      "left": {
+                        "type": "CallExpression",
+                        "calee": {
+                          "type": "Identifier",
+                          "name": "fib"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "i1"
+                          }
+                        ]
+                      },
+                      "right": {
+                        "type": "CallExpression",
+                        "calee": {
+                          "type": "Identifier",
+                          "name": "fib"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "i2"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ReturnStatement",
+          "argument": {
+            "type": "Identifier",
+            "name": "result"
+          }
+        }
+      ]
+    },
+    {
+      "type": "FunctionDeclaration",
+      "name": "main",
+      "body": [
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "i"
+          },
+          "init": {
+            "type": "Literal",
+            "value": 3
+          },
+          "var_type": "integer",
+          "kind": "const"
+        },
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "result"
+          },
+          "var_type": "integer",
+          "kind": "var"
+        },
+        {
+          "type": "IfStatement",
+          "test": {
+            "type": "BinaryExpression",
+            "operator": ">=",
+            "left": {
+              "type": "Identifier",
+              "name": "i"
+            },
+            "right": {
+              "type": "Literal",
+              "value": 0
+            }
+          },
+          "consequent": [
+            {
+              "type": "ExpressionStatement",
+              "expression": {
+                "type": "AssignmentExpression",
+                "operator": "=",
+                "left": {
+                  "type": "Identifier",
+                  "name": "result"
+                },
+                "right": {
+                  "type": "CallExpression",
+                  "calee": {
+                    "type": "Identifier",
+                    "name": "fib"
+                  },
+                  "arguments": [
+                    {
+                      "type": "Identifier",
+                      "name": "i"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "alternate": [
+            {
+              "type": "SkipStatement"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+Syntax is okay

@@ -403,7 +403,7 @@
           ],
           "alternate": [
             {
-              "type": "SkipeStatement"
+              "type": "SkipStatement"
             }
           ]
         },

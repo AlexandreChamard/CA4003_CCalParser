@@ -2,9 +2,9 @@ var i:integer;
 
 integer test_fn(x:integer)
 {
-    var i_:integer;
+    var i:integer;
 
-    i_ = 2;
+    i = 2;
     return (x);
 }
 

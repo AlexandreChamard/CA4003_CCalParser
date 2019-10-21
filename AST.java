@@ -63,10 +63,13 @@ class Symbol {
         kind = _kind;
     }
 
-    public Symbol(String _name, String _type, ArrayList<Type> _complexType, String _kind) {
-        name = _name;
+    public Symbol(String _name, String _type, ArrayList<VariableDeclaration> vars, String _kind) throws ParseException {
+        name = _name.toLowerCase();
         type = Typeable.stringToType(_type);
-        complexType = _complexType;
+        complexType = new ArrayList<Type>();
+        for (VariableDeclaration v : vars) {
+            complexType.add(v.getType());
+        }
         kind = _kind;
     }
 
@@ -118,21 +121,12 @@ class FunctionDeclaration extends Statement {
     ArrayList<VariableDeclaration> params;
     StatementBlock statements;
 
-    public FunctionDeclaration(Token _id, String type, ArrayList<VariableDeclaration> _params, StatementBlock _statements) throws ParseException {
+    public FunctionDeclaration(Token _id, Symbol s, ArrayList<VariableDeclaration> _params, StatementBlock _statements) throws ParseException {
         id = new Identifier(_id);
         params = _params;
         statements = _statements;
 
-        initSymbol(_id.toString(), type);
-    }
-
-    public void initSymbol(String name, String type) throws ParseException {
-        ArrayList<Type> complexType = new ArrayList<Type>();
-
-        for (VariableDeclaration t : params) {
-            complexType.add(t.getType());
-        }
-        id.updateSymbol(new Symbol(name, type, complexType, "function"));
+        id.updateSymbol(s);
         SymbolTracker.getInstance().addSymbol(id.s);
     }
 
@@ -314,7 +308,7 @@ class WhileStatement extends Statement {
 class SkipStatement extends Statement {
     public String toString(JsonShowHelper jsh) {
         return "{\n"
-            + jsh.increase() + "\"type\": \"SkipeStatement\"\n"
+            + jsh.increase() + "\"type\": \"SkipStatement\"\n"
             + jsh.decrease() + "}";
     }
 }
@@ -594,7 +588,7 @@ class Identifier extends Expression {
     }
 
     public void updateSymbol() {
-        s = SymbolTracker.getInstance().getSymbol(id.toString());
+        s = SymbolTracker.getInstance().getSymbol(id.toString().toLowerCase());
     }
 
     public void updateSymbol(Symbol _s) {

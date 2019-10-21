@@ -33,7 +33,7 @@
           "type": "VariableDeclaration",
           "id": {
             "type": "Identifier",
-            "name": "i_"
+            "name": "i"
           },
           "var_type": "integer",
           "kind": "var"
@@ -45,7 +45,7 @@
             "operator": "=",
             "left": {
               "type": "Identifier",
-              "name": "i_"
+              "name": "i"
             },
             "right": {
               "type": "Literal",

@@ -1,0 +1,36 @@
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "id": {
+        "type": "Identifier",
+        "name": "f"
+      },
+      "return_type": "void",
+      "params": [
+      ],
+      "body": [
+      ]
+    },
+    {
+      "type": "FunctionDeclaration",
+      "name": "main",
+      "body": [
+        {
+          "type": "ExpressionStatement",
+          "expression": {
+            "type": "CallExpression",
+            "calee": {
+              "type": "Identifier",
+              "name": "F"
+            },
+            "arguments": [
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+Syntax is okay
