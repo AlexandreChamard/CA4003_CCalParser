@@ -1,0 +1,9 @@
+boolean f() {
+  return (true);
+}
+
+main {
+  while (f() || 42 == 40 + 2) {
+    skip;
+  }
+}

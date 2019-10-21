@@ -1,0 +1,6 @@
+
+main {
+  while (true == true || 42 == 40 + 2) == true {
+    skip;
+  }
+}

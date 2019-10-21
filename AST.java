@@ -17,6 +17,7 @@ interface Typeable {
     Type getType() throws ParseException;
     ArrayList<Type> getComplexType() throws ParseException;
     boolean isLiteral();
+    boolean isLogical();
 
     static String typeToString(Type t) {
         switch (t) {
@@ -363,6 +364,7 @@ abstract class Expression implements Showable, Typeable {
     }
 
     public boolean isLiteral() { return false; }
+    public boolean isLogical() { return false; }
 
     public void checkValidity() throws ParseException {
         if (getType() == Type.INVALID)
@@ -415,6 +417,8 @@ class LogicalExpression extends Expression {
         checkValidity();
     }
 
+    public boolean isLogical() { return true; }
+
     public Type getType() throws ParseException {
         Type t1 = e1.getType(), t2 = e2.getType();
 
@@ -451,6 +455,9 @@ class BinaryExpression extends Expression {
     }
 
     public Type getType() throws ParseException {
+        if (e1.isLogical() == true || e2.isLogical() == true)
+            return Type.INVALID;
+
         Type t1 = e1.getType(), t2 = e2.getType();
 
         switch (operator) {
@@ -548,6 +555,10 @@ class CallExpression extends Expression {
 
     public ArrayList<Type> getComplexType() throws ParseException { return calee.s.complexType; }
     
+    public boolean isLiteral() {
+        return true; // does not make any sens but use to onvalidated LogicalExpression
+    }
+
     public String toString(JsonShowHelper jsh) {
         String str = "{\n"
             + jsh.increase() + "\"type\": \"CallExpression\",\n"

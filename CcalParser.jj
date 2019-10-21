@@ -248,7 +248,8 @@ FunctionDeclaration Function(): {
     st.newBlock();
 }
 {
-    t = <VAR_TYPE> id = <IDENTIFIER> "(" ps = ParamList() ")" { s = new Symbol(id.toString(), t.toString(), ps, "function"); st.addSymbol(s); }
+    t = <VAR_TYPE> id = <IDENTIFIER> "(" ps = ParamList() ")"
+    { s = new Symbol(id.toString(), t.toString(), ps, "function"); st.addSymbol(s); } // create the symbol of the function for recursive call.
     "{" 
         dl = DeclList()
         sb = StatementBlock()
@@ -258,18 +259,19 @@ FunctionDeclaration Function(): {
             throw new ParseException("return type does not match with function type.");
         dl.addBack(sb);
         dl.addBack(new ReturnStatement(r));
-        st.deleteBlock();
+        st.deleteBlock(); // because the function symbol was create IN the block, we need to push it again (next line).
         return new FunctionDeclaration(id, s, ps, dl);
     }
 
-|   "void" id = <IDENTIFIER> "(" ps = ParamList() ")" { s = new Symbol(id.toString(), "void", ps, "function"); st.addSymbol(s); }
+|   "void" id = <IDENTIFIER> "(" ps = ParamList() ")"
+    { s = new Symbol(id.toString(), "void", ps, "function"); st.addSymbol(s); } // create the symbol of the function for recursive call.
     "{"
         dl = DeclList()
         sb = StatementBlock()
         "return" "(" ")" ";"
     "}" {
         dl.addBack(sb);
-        st.deleteBlock();
+        st.deleteBlock(); // because the function symbol was create IN the block, we need to push it again (next line).
         return new FunctionDeclaration(id, s, ps, dl);
     }
 }
