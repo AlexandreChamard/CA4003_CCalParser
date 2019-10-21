@@ -1,0 +1,17 @@
+var i:integer;
+
+integer test_fn(x:integer)
+{
+    var i_:integer;
+
+    i_ = 2;
+    return (x);
+}
+
+main
+{
+    var i:integer;
+
+    i = 1;
+    i = test_fn(i);
+}

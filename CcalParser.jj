@@ -358,7 +358,7 @@ Statement Statement(): {
 |   "{" s = StatementBlock() "}"                            { return s; }
 |   s = IfStatement()                                       { return s; }
 |   s = WhileStatement()                                    { return s; }
-|   "skip " ";"                                             { return new SkipStatement(); }
+|   "skip" ";"                                              { return new SkipStatement(); }
 }
 
 /**
@@ -593,10 +593,11 @@ Expression Fragment(): {
     Expression e;
 }
 {
-    e = SubFragment()           { return e; }
-|   "-" e = SubFragment()       { return new UnaryExpression("-", e); }
-|   t = <BOOL_LIT>              { return new Bool(t.toString().equals("true")); }
-|   "(" e = Condition() ")"     { return e; }
+    t = <IDENTIFIER> e = SubIdentifer(new Identifier(t))    { return e; }
+|   t = <NUM>                                               { return new Number(t.toString()); }
+|   "-" e = SubFragment()                                   { return new UnaryExpression("-", e); }
+|   t = <BOOL_LIT>                                          { return new Bool(t.toString().equals("true")); }
+|   "(" e = Condition() ")"                                 { return e; }
 }
 
 /**
@@ -607,8 +608,16 @@ Expression SubFragment(): {
     Token t;
 }
 {
-    t = <IDENTIFIER>            { return new Identifier(t); }
-|   t = <NUM>                   { return new Number(t.toString()); }
+    t = <IDENTIFIER>     { return new Identifier(t); }
+|   t = <NUM>            { return new Number(t.toString()); }
+}
+
+Expression SubIdentifer(Identifier id): {
+    ArrayList<Identifier> args;
+}
+{
+    "(" args = ArgList() ")"    { return new CallExpression(id, args); }
+|                               { return id; }
 }
 
 /**

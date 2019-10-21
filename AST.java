@@ -37,6 +37,8 @@ interface Typeable {
                 return Type.BOOLEAN;
             case "integer":
                 return Type.INTEGER;
+            case "void":
+                return Type.VOID;
             default:
                 return Type.INVALID;
         }
@@ -44,9 +46,9 @@ interface Typeable {
 }
 
 class Symbol {
-    String kind;
     String name;
     Type type;
+    String kind;
 
     public Symbol(String _name, Type _type, String _kind) {
         name = _name;
@@ -60,8 +62,12 @@ class Symbol {
         kind = _kind;
     }
 
+    public String getType() {
+        return Typeable.typeToString(type);
+    }
+
     public String toString() { // debug
-        return "<"+name+"::"+type+">";
+        return "<"+kind+" "+name+"::"+type+">";
     }
 }
 
@@ -77,7 +83,7 @@ class Program implements Showable {
     }
 
     public String toString(JsonShowHelper jsh) {
-        return "\"Program\": {\n"
+        return "{\n"
             + jsh.increase() + "\"type\": \"Program\",\n"
             + jsh.spaces + "\"body\": " + statements.toString(jsh) + "\n"
             + jsh.decrease() + "}";
@@ -105,7 +111,7 @@ class FunctionDeclaration extends Statement {
         params = _params;
         statements = _statements;
 
-        initSymbol(id.id.toString(), type);
+        initSymbol(_id.toString(), type);
     }
 
     public void initSymbol(String name, String type) {
@@ -116,8 +122,8 @@ class FunctionDeclaration extends Statement {
     public String toString(JsonShowHelper jsh) {
         String str = "{\n"
             + jsh.increase() + "\"type\": \"FunctionDeclaration\",\n"
-            + jsh.spaces + "\"id\": \"" + id.toString(jsh) + "\",\n"
-            + jsh.spaces + "\"return\": \"" + id.s.type + "\",\n";
+            + jsh.spaces + "\"id\": " + id.toString(jsh) + ",\n"
+            + jsh.spaces + "\"return_type\": \"" + id.s.getType() + "\",\n";
 
         str += jsh.spaces + "\"params\": [\n";
         jsh.increase();
@@ -193,8 +199,7 @@ class StatementBlock extends Statement {
                 str += ",";
             str += "\n";
         }
-        str += jsh.decrease() + "]\n";
-        return str;
+        return str + jsh.decrease() + "]";
     }
 }
 
@@ -206,19 +211,21 @@ class VariableDeclaration extends Statement {
     Expression e;
 
     public VariableDeclaration(Token _id, Token type, Expression _e) {
-        id = new Identifier(_id);
+        Symbol s = initSymbol(_id.toString(), type.toString(), "const");
+        id = new Identifier(_id, s);
         e = _e;
-        initSymbol(id.id.toString(), type.toString(), "const");
     }
 
-    public VariableDeclaration(Token _id, Token type ) {
-        id = new Identifier(_id);
-        initSymbol(id.id.toString(), type.toString(), "var");
+    public VariableDeclaration(Token _id, Token type) {
+        Symbol s = initSymbol(_id.toString(), type.toString(), "var");
+        id = new Identifier(_id, s);
     }
 
-    void initSymbol(String name, String type, String kind) {
-        id.updateSymbol(new Symbol(name, type, kind));
-        SymbolTracker.getInstance().addSymbol(id.s);
+    Symbol initSymbol(String name, String type, String kind) {
+        Symbol s = new Symbol(name, type, kind);
+        SymbolTracker.getInstance().addSymbol(s);
+
+        return s;
     }
 
     public String toString(JsonShowHelper jsh) {
@@ -228,7 +235,8 @@ class VariableDeclaration extends Statement {
         if (e != null) {
             str += jsh.spaces + "\"init\": " + e.toString(jsh) + ",\n";
         }
-        str += jsh.spaces + "\"kind\": " + id.s.type + "\n"
+        str += jsh.spaces + "\"var_type\": \"" + id.s.getType() + "\",\n"
+            + jsh.spaces + "\"kind\": \"" + id.s.kind + "\"\n"
             + jsh.decrease() + "}";
         return str;
     }
@@ -509,16 +517,16 @@ class CallExpression extends Expression {
         arguments = _arguments;
     }
 
-    public Type getType() throws ParseException { return Type.VOID; }
+    public Type getType() throws ParseException { return calee.s.type; }
 
     public ArrayList<Type> getComplexType() throws ParseException { return new ArrayList<Type>(); }
     
     public String toString(JsonShowHelper jsh) {
         String str = "{\n"
             + jsh.increase() + "\"type\": \"CallExpression\",\n"
-            + jsh.spaces + "\"calee\": \"" + calee.toString(jsh) + "\",\n";
-        
-        str += jsh.spaces + "\"arguments\": [\n";
+            + jsh.spaces + "\"calee\": " + calee.toString(jsh) + ",\n"
+            + jsh.spaces + "\"arguments\": [\n";
+
         jsh.increase();
         for (Identifier arg : arguments) {
             str += jsh.spaces + arg.toString(jsh);
@@ -526,8 +534,9 @@ class CallExpression extends Expression {
                 str += ",";
             str += "\n";
         }
-        str += jsh.decrease() + "],\n";
-        return str + jsh.decrease() + "}";
+        return str
+            + jsh.decrease() + "]\n"
+            + jsh.decrease() + "}";
     }
 }
 
@@ -542,11 +551,17 @@ class Identifier extends Expression {
 
     Identifier(Token _id) {
         id = _id;
+        updateSymbol();
     }
 
     Identifier(Token _id, Symbol _s) {
         id = _id;
         s = _s;
+        updateSymbol();
+    }
+
+    public void updateSymbol() {
+        s = SymbolTracker.getInstance().getSymbol(id.toString());
     }
 
     public void updateSymbol(Symbol _s) {
@@ -563,7 +578,7 @@ class Identifier extends Expression {
 
     public Type getType() throws ParseException {
         if (s == null)
-            throw new ParseException("identifier "+s+" is not bind to anything.");
+            throw new ParseException("identifier "+id+" is not bind to anything.");
         return s.type;
     }
 

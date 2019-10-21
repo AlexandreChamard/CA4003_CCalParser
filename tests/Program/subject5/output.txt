@@ -1,0 +1,121 @@
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "id": {
+        "type": "Identifier",
+        "name": "i"
+      },
+      "var_type": "integer",
+      "kind": "var"
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": {
+        "type": "Identifier",
+        "name": "test_fn"
+      },
+      "return_type": "integer",
+      "params": [
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "x"
+          },
+          "var_type": "integer",
+          "kind": "var"
+        }
+      ],
+      "body": [
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "i_"
+          },
+          "var_type": "integer",
+          "kind": "var"
+        },
+        {
+          "type": "ExpressionStatement",
+          "expression": {
+            "type": "AssignmentExpression",
+            "operator": "=",
+            "left": {
+              "type": "Identifier",
+              "name": "i_"
+            },
+            "right": {
+              "type": "Literal",
+              "value": 2
+            }
+          }
+        },
+        {
+          "type": "ReturnStatement",
+          "argument": {
+            "type": "Identifier",
+            "name": "x"
+          }
+        }
+      ]
+    },
+    {
+      "type": "FunctionDeclaration",
+      "name": "main",
+      "body": [
+        {
+          "type": "VariableDeclaration",
+          "id": {
+            "type": "Identifier",
+            "name": "i"
+          },
+          "var_type": "integer",
+          "kind": "var"
+        },
+        {
+          "type": "ExpressionStatement",
+          "expression": {
+            "type": "AssignmentExpression",
+            "operator": "=",
+            "left": {
+              "type": "Identifier",
+              "name": "i"
+            },
+            "right": {
+              "type": "Literal",
+              "value": 1
+            }
+          }
+        },
+        {
+          "type": "ExpressionStatement",
+          "expression": {
+            "type": "AssignmentExpression",
+            "operator": "=",
+            "left": {
+              "type": "Identifier",
+              "name": "i"
+            },
+            "right": {
+              "type": "CallExpression",
+              "calee": {
+                "type": "Identifier",
+                "name": "test_fn"
+              },
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "i"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+Syntax is okay
