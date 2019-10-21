@@ -27,7 +27,8 @@ class SymbolTracker {
         l.push(s);
     }
 
-    public Symbol getSymbol(String key) {
+    public Symbol getSymbol(String _key) {
+        String key = _key.toLowerCase();
         LinkedList<Symbol> l = symTracker.get(key);
 
         if (l == null)

@@ -588,7 +588,7 @@ class Identifier extends Expression {
     }
 
     public void updateSymbol() {
-        s = SymbolTracker.getInstance().getSymbol(id.toString().toLowerCase());
+        s = SymbolTracker.getInstance().getSymbol(id.toString());
     }
 
     public void updateSymbol(Symbol _s) {
