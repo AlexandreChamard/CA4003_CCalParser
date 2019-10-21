@@ -1,0 +1,12 @@
+{
+    "type": "Program",
+    "body": [
+        {
+            "type": "FunctionDeclaration",
+            "name": "main",
+            "body": [
+            ]
+        }
+    ]
+}
+Syntax is okay

@@ -48,6 +48,7 @@ interface Typeable {
 class Symbol {
     String name;
     Type type;
+    ArrayList<Type> complexType;
     String kind;
 
     public Symbol(String _name, Type _type, String _kind) {
@@ -60,6 +61,17 @@ class Symbol {
         name = _name;
         type = Typeable.stringToType(_type);
         kind = _kind;
+    }
+
+    public Symbol(String _name, String _type, ArrayList<Type> _complexType, String _kind) {
+        name = _name;
+        type = Typeable.stringToType(_type);
+        complexType = _complexType;
+        kind = _kind;
+    }
+
+    public boolean isComplex() {
+        return complexType != null;
     }
 
     public String getType() {
@@ -106,7 +118,7 @@ class FunctionDeclaration extends Statement {
     ArrayList<VariableDeclaration> params;
     StatementBlock statements;
 
-    public FunctionDeclaration(Token _id, String type, ArrayList<VariableDeclaration> _params, StatementBlock _statements) {
+    public FunctionDeclaration(Token _id, String type, ArrayList<VariableDeclaration> _params, StatementBlock _statements) throws ParseException {
         id = new Identifier(_id);
         params = _params;
         statements = _statements;
@@ -114,8 +126,13 @@ class FunctionDeclaration extends Statement {
         initSymbol(_id.toString(), type);
     }
 
-    public void initSymbol(String name, String type) {
-        id.updateSymbol(new Symbol(name, type, "function"));
+    public void initSymbol(String name, String type) throws ParseException {
+        ArrayList<Type> complexType = new ArrayList<Type>();
+
+        for (VariableDeclaration t : params) {
+            complexType.add(t.getType());
+        }
+        id.updateSymbol(new Symbol(name, type, complexType, "function"));
         SymbolTracker.getInstance().addSymbol(id.s);
     }
 
@@ -226,6 +243,10 @@ class VariableDeclaration extends Statement {
         SymbolTracker.getInstance().addSymbol(s);
 
         return s;
+    }
+
+    public Type getType() throws ParseException {
+        return id.getType();
     }
 
     public String toString(JsonShowHelper jsh) {
@@ -512,14 +533,26 @@ class CallExpression extends Expression {
     Identifier calee;
     ArrayList<Identifier> arguments;
 
-    public CallExpression(Identifier _calee, ArrayList<Identifier> _arguments) {
+    public CallExpression(Identifier _calee, ArrayList<Identifier> _arguments) throws ParseException {
         calee = _calee;
         arguments = _arguments;
+        ArrayList<Type> complexType = new ArrayList<Type>();
+
+        for (Typeable t : arguments) {
+            complexType.add(t.getType());
+        }
+        if (calee.s.isComplex() == false) {
+            throw new ParseException(calee.id+" is not a function.");
+        }
+        if (complexType.size() != calee.s.complexType.size())
+            throw new ParseException("in "+calee.id+" call arguments number does not match with the definition.");
+        if (complexType.equals(calee.s.complexType) == false)
+            throw new ParseException("in "+calee.id+" call , arguments type does not match with the definition.");
     }
 
     public Type getType() throws ParseException { return calee.s.type; }
 
-    public ArrayList<Type> getComplexType() throws ParseException { return new ArrayList<Type>(); }
+    public ArrayList<Type> getComplexType() throws ParseException { return calee.s.complexType; }
     
     public String toString(JsonShowHelper jsh) {
         String str = "{\n"
