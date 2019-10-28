@@ -4,18 +4,18 @@ options
 IGNORE_CASE = true;
 }
 
-PARSER_BEGIN(SyntaxChecker)
+PARSER_BEGIN(CcalAstGenerator)
 
 import java.util.ArrayList;
 
 //////////////////
 ///    MAIN    ///
 //////////////////
-public class SyntaxChecker {
+public class CcalAstGenerator {
     static void help() {
             System.out.println("");
             System.out.println("USAGE:");
-            System.out.println("\tjava SyntaxChecker [inputfile.ccal] [--debug [Expression | Condition]]");
+            System.out.println("\tjava CcalAstGenerator [inputfile.ccal] [--debug [Program | Condition | Expression | Identifier]]");
             System.out.println("");
             System.out.println("  -h --help:\tshow help.");
             System.out.println("  --debug:\tparse only the given type.");
@@ -43,7 +43,7 @@ public class SyntaxChecker {
     }
 
     public static void main(String[] args) {
-        SyntaxChecker parser;
+        CcalAstGenerator parser;
         String mod = "Program";
 
         switch (parseArgs(args)) {
@@ -51,13 +51,13 @@ public class SyntaxChecker {
                 mod = args[1];
             case 1: // get input from prompt
                 System.out.println("SLP Parser: Reading from standard input...");
-                parser = new SyntaxChecker(System.in);
+                parser = new CcalAstGenerator(System.in);
                 break;
             case 2: // use debug feature
                 mod = args[2];
             case 3: // default program
                 try {
-                    parser = new SyntaxChecker(new java.io.FileInputStream(args[0]));
+                    parser = new CcalAstGenerator(new java.io.FileInputStream(args[0]));
                 } catch (java.io.FileNotFoundException e) {
                     System.out.println("SLP Parser: File " + args[0] + " not found.");
                     System.exit(1);
@@ -99,7 +99,7 @@ public class SyntaxChecker {
     }
 }
 
-PARSER_END(SyntaxChecker)
+PARSER_END(CcalAstGenerator)
 
 TOKEN_MGR_DECLS : {
     static int commentNesting = 0;

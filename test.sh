@@ -1,12 +1,11 @@
 #!/bin/bash
-sourceFile="CcalParser.jj"
-programName="SyntaxChecker"
+
+programName="CcalAstGenerator"
 
 call="java ${programName}"
-error="error"
 testsdir="tests"
 
-javacc "${sourceFile}" && javac *.java || exit 1
+./compile.sh || exit 1
 
 file=tmpfile
 
