@@ -1,5 +1,6 @@
 #!/bin/bash
 
-sourceFile="CcalAstGenerator.jj"
+JJTsourceFile="CcalParser.jjt"
+JJsourceFile="CcalParser.jj"
 
-javacc "${sourceFile}" && javac *.java -Xlint:unchecked
+jjtree "${JJTsourceFile}" && javacc "${JJsourceFile}" && javac *.java -Xlint:unchecked

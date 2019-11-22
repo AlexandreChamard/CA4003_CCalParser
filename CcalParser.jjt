@@ -1,0 +1,177 @@
+
+options
+{
+    IGNORE_CASE = true;
+    MULTI=true;
+    VISITOR = true;
+}
+
+PARSER_BEGIN(CcalParser)
+
+import java.io.*;
+import java.util.*;
+
+public class CcalParser {
+    static void help() {
+            System.out.println("");
+            System.out.println("USAGE:");
+            System.out.println("\tjava CcalParser [inputfile.ccal] [--debug [Program | Condition | Expression | Identifier]]");
+            System.out.println("");
+            System.out.println("  -h --help:\tshow help.");
+            System.out.println("  --debug:\tparse only the given type.");
+            System.out.println("");
+    }
+
+    static int parseArgs(String[] args) {
+        if (args.length == 0)
+            return 1; // get input from prompt
+        if (args[0].equals("-h") || args[0].equals("--help"))
+            return 4; // show help
+        if (args.length == 1)
+            return 3; // default program
+        if (args.length == 2 && args[0].equals("--debug"))
+            return 0; // get input from prompt + use debug feature
+        if (args.length == 3 && args[1].equals("--debug"))
+            return 2; // use debug feature
+        return -1; // show help and return 2
+    }
+
+    static void invalidArgument(String msg) {
+        System.out.println("Error: "+msg);
+        help();
+        System.exit(2);
+    }
+
+    public static void main(String[] args) throws ParseException, FileNotFoundException {
+        if (args.length < 1) {
+            System.out.println("Please pass in the filename.");
+            System.exit(1);
+        }
+        CcalParser parser = new CcalParser(new FileInputStream(args[0]));
+        SimpleNode root = parser.program();
+        System.out.println();
+        System.out.println("Program:");
+        PrintVisitor pv = new PrintVisitor();
+        root.jjtAccept(pv, null);
+        System.out.println();
+        // System.out.println("Type Checking:");
+        // TypeCheckVisitor tc = new TypeCheckVisitor();
+        // root.jjtAccept(tc, ST);
+    }
+}
+
+PARSER_END(CcalParser)
+
+TOKEN_MGR_DECLS : {
+    static int commentNesting = 0;
+}
+
+SKIP : {
+    " "
+|   "\t"
+|   "\n"
+|   "\r"
+|   "\f"
+}
+
+SKIP : { /* COMMENTS */
+    <"//" (~["\r", "\n"])*>
+|   "/*" { ++commentNesting; } : IN_COMMENT
+}
+
+<IN_COMMENT> SKIP : {
+    "/*" { ++commentNesting; }
+|   "*/" { --commentNesting; if (commentNesting == 0) SwitchTo(DEFAULT); }
+|   <~[]>
+}
+
+TOKEN: {
+    "(" | ")"
+|   "{" | "}"
+|   "+"
+|   "-"
+|   <COMP_OP: "==" | "!=">
+|   <COMP_NUM_OP: "<" | "<=" | ">" | ">=">
+|   <LOGI_OP: "&&" | "||">
+|   "~"
+|   "="
+|   ","
+|   ":"
+|   ";"
+|   <BOOL_LIT: "true" | "false">
+|   "var"
+|   "const"
+|   "void"
+|   <VAR_TYPE: "boolean" | "integer">
+|   "main"
+|   "if"
+|   "else"
+|   "while"
+|   "skip"
+|   "return"
+|   <NUM: (["1"-"9"] (["0"-"9"])* | "0")>
+|   <IDENTIFIER: ["a"-"z"] (["a"-"z"] | ["0"-"9"] | "_")*>
+}
+
+SimpleNode program() : {}
+{
+    Stms() <EOF> {return jjtThis;}
+}
+
+void Stms() #void : {}
+{
+    (SimpleStm() ";" [Stms() #Stms(2)] )
+}
+
+void SimpleStm() #void : {}
+{
+    (expression())
+|   (declaration())
+}
+
+void declaration() #void : {Token t; String name;}
+{
+    t = <VAR_TYPE> name = identifier() {jjtThis.value = t.image; } #Decl(1)
+}
+
+void expression() #void : {Token t;}
+{
+    term()
+    (
+        (
+            t = "+" term() {jjtThis.value = t.image;} #Add_op(2)
+        |   t = "-" term() {jjtThis.value = t.image;} #Add_op(2)
+        )
+    |   (
+            t = <LOGI_OP> term() {jjtThis.value = t.image;} #Bool_op(2)
+        )
+    )*
+}
+
+void term() #void : {Token t;}
+{
+    "~" factor() #Not_op(1)
+|   factor()
+    (
+        t = "*" factor() {jjtThis.value = t.image;} #Mult_op(2)
+    )*
+}
+
+void factor() #void : {}
+{
+    (
+        "(" expression() #Exp(1) ")"
+    |   number()
+    |   identifier()
+    )
+}
+
+void number() : {Token t;}
+{
+    t = <NUM> {jjtThis.value = t.image;}
+}
+
+String identifier() : {Token t;}
+{
+    t = <IDENTIFIER> {jjtThis.value = t.image; return t.image;}
+}
