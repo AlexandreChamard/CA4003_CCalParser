@@ -1,10 +1,6 @@
 
 import java.util.ArrayList;
 
-interface Showable {
-    String toString(JsonShowHelper jsh);
-}
-
 
 enum Type {
     INVALID,
@@ -47,10 +43,10 @@ interface Typeable {
 }
 
 class Symbol {
-    String name;
-    Type type;
-    ArrayList<Type> complexType;
-    String kind;
+    public String name;
+    public Type type;
+    public ArrayList<Type> complexType;
+    public String kind;
 
     public Symbol(String _name, Type _type, String _kind) {
         name = _name;
@@ -81,28 +77,27 @@ class Symbol {
     public String getType() {
         return Typeable.typeToString(type);
     }
-
-    public String toString() { // debug
-        return "<"+kind+" "+name+"::"+type+">";
-    }
 }
 
+interface Visitable {
+    public Object accept(ASTVisitor v, Object data);
+}
+
+abstract class ASTNode implements Visitable {
+}
 
 //////////////////
 ///   Program  ///
 //////////////////
-class Program implements Showable {
-    private StatementBlock statements;
+class Program extends ASTNode {
+    public StatementBlock statements;
 
     public Program(StatementBlock _statements) {
         statements = _statements;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"Program\",\n"
-            + jsh.spaces + "\"body\": " + statements.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -111,16 +106,16 @@ class Program implements Showable {
 //////////////////
 ///  Statement ///
 //////////////////
-abstract class Statement implements Showable {
+abstract class Statement extends ASTNode {
 }
 
 ////////////////////
 /// FunctionDecl ///
 ////////////////////
 class FunctionDeclaration extends Statement {
-    Identifier id;
-    ArrayList<VariableDeclaration> params;
-    StatementBlock statements;
+    public Identifier id;
+    public ArrayList<VariableDeclaration> params;
+    public StatementBlock statements;
 
     public FunctionDeclaration(Token _id, Symbol s, ArrayList<VariableDeclaration> _params, StatementBlock _statements) throws ParseException {
         id = new Identifier(_id);
@@ -131,24 +126,8 @@ class FunctionDeclaration extends Statement {
         SymbolTracker.getInstance().addSymbol(id.s);
     }
 
-    public String toString(JsonShowHelper jsh) {
-        String str = "{\n"
-            + jsh.increase() + "\"type\": \"FunctionDeclaration\",\n"
-            + jsh.spaces + "\"id\": " + id.toString(jsh) + ",\n"
-            + jsh.spaces + "\"return_type\": \"" + id.s.getType() + "\",\n";
-
-        str += jsh.spaces + "\"params\": [\n";
-        jsh.increase();
-        for (VariableDeclaration p : params) {
-            str += jsh.spaces + p.toString(jsh);
-            if (p != params.get(params.size() - 1))
-                str += ",";
-            str += "\n";
-        }
-        str += jsh.decrease() + "],\n";
-
-        str += jsh.spaces + "\"body\": " + statements.toString(jsh) + "\n";
-        return str + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -156,18 +135,14 @@ class FunctionDeclaration extends Statement {
 ///  MainFunc  ///
 //////////////////
 class MainFunction extends Statement {
-    StatementBlock statements;
+    public StatementBlock statements;
 
     public MainFunction(StatementBlock _statements) {
         statements = _statements;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"FunctionDeclaration\",\n"
-            + jsh.spaces + "\"name\": \"main\",\n" // should be an identifier
-            + jsh.spaces + "\"body\": " + statements.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -176,7 +151,7 @@ class MainFunction extends Statement {
 /// StateBlock ///
 //////////////////
 class StatementBlock extends Statement {
-    ArrayList<Statement> statements;
+    public ArrayList<Statement> statements;
 
     public StatementBlock() {
         statements = new ArrayList<Statement>();
@@ -201,17 +176,8 @@ class StatementBlock extends Statement {
         statements.add(statement);
     }
 
-    public String toString(JsonShowHelper jsh) {
-        String str = "[\n";
-
-        jsh.increase();
-        for (Statement s : statements) {
-            str += jsh.spaces + s.toString(jsh);
-            if (s != statements.get(statements.size() - 1))
-                str += ",";
-            str += "\n";
-        }
-        return str + jsh.decrease() + "]";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -219,17 +185,17 @@ class StatementBlock extends Statement {
 ///   VarDecl  ///
 //////////////////
 class VariableDeclaration extends Statement {
-    Identifier id;
-    Expression e;
+    public Identifier id;
+    public Expression e;
 
     public VariableDeclaration(Token _id, Token type, Expression _e) {
-        Symbol s = initSymbol(_id.toString(), type.toString(), "const");
+        Symbol s = initSymbol(_id.image, type.image, "const");
         id = new Identifier(_id, s);
         e = _e;
     }
 
     public VariableDeclaration(Token _id, Token type) {
-        Symbol s = initSymbol(_id.toString(), type.toString(), "var");
+        Symbol s = initSymbol(_id.image, type.image, "var");
         id = new Identifier(_id, s);
     }
 
@@ -244,17 +210,8 @@ class VariableDeclaration extends Statement {
         return id.getType();
     }
 
-    public String toString(JsonShowHelper jsh) {
-        String str = "{\n"
-            + jsh.increase() + "\"type\": \"VariableDeclaration\",\n"
-            + jsh.spaces + "\"id\": " + id.toString(jsh) + ",\n";
-        if (e != null) {
-            str += jsh.spaces + "\"init\": " + e.toString(jsh) + ",\n";
-        }
-        str += jsh.spaces + "\"var_type\": \"" + id.s.getType() + "\",\n"
-            + jsh.spaces + "\"kind\": \"" + id.s.kind + "\"\n"
-            + jsh.decrease() + "}";
-        return str;
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -262,9 +219,9 @@ class VariableDeclaration extends Statement {
 ///   IfState  ///
 //////////////////
 class IfStatement extends Statement {
-    Expression test;
-    StatementBlock consequent;
-    StatementBlock alternate;
+    public Expression test;
+    public StatementBlock consequent;
+    public StatementBlock alternate;
 
     public IfStatement(Expression _test, StatementBlock _consequent, StatementBlock _alternate) {
         test = _test;
@@ -272,13 +229,8 @@ class IfStatement extends Statement {
         alternate = _alternate;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"IfStatement\",\n"
-            + jsh.spaces + "\"test\": " + test.toString(jsh) + ",\n"
-            + jsh.spaces + "\"consequent\": " + consequent.toString(jsh) + ",\n"
-            + jsh.spaces + "\"alternate\": " + alternate.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -286,20 +238,16 @@ class IfStatement extends Statement {
 /// WhileState ///
 //////////////////
 class WhileStatement extends Statement {
-    Expression test;
-    StatementBlock body;
+    public Expression test;
+    public StatementBlock body;
 
     public WhileStatement(Expression _test, StatementBlock _body) {
         test = _test;
         body = _body;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"WhileStatement\",\n"
-            + jsh.spaces + "\"test\": " + test.toString(jsh) + ",\n"
-            + jsh.spaces + "\"body\": " + body.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -307,10 +255,8 @@ class WhileStatement extends Statement {
 ///  SkipState ///
 //////////////////
 class SkipStatement extends Statement {
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"SkipStatement\"\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -318,7 +264,7 @@ class SkipStatement extends Statement {
 /// ReturnState ///
 ///////////////////
 class ReturnStatement extends Statement {
-    Expression argument;
+    public Expression argument;
 
     public ReturnStatement() {
     }
@@ -327,11 +273,8 @@ class ReturnStatement extends Statement {
         argument = _argument;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"ReturnStatement\",\n"
-            + jsh.spaces + "\"argument\": " + argument.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -339,17 +282,14 @@ class ReturnStatement extends Statement {
 ///  ExprState ///
 //////////////////
 class ExpressionStatement extends Statement {
-    Expression e;
+    public Expression e;
 
     public ExpressionStatement(Expression _e) {
         e = _e;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"ExpressionStatement\",\n"
-            + jsh.spaces + "\"expression\": " + e.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -358,7 +298,7 @@ class ExpressionStatement extends Statement {
 //////////////////
 ///    Expr    ///
 //////////////////
-abstract class Expression implements Showable, Typeable {
+abstract class Expression extends ASTNode implements Typeable {
     public ArrayList<Type> getComplexType() throws ParseException {
         return new ArrayList<Type>();
     }
@@ -376,8 +316,8 @@ abstract class Expression implements Showable, Typeable {
 /// AssignmentExpr ///
 //////////////////////
 class AssignmentExpression extends Expression {
-    private Identifier id;
-    private Expression e;
+    public Identifier id;
+    public Expression e;
 
     AssignmentExpression(Identifier _id, Expression _e) throws ParseException {
         id = _id;
@@ -393,13 +333,8 @@ class AssignmentExpression extends Expression {
         return Type.INVALID;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"AssignmentExpression\",\n"
-            + jsh.spaces + "\"operator\": \"=\",\n"
-            + jsh.spaces + "\"left\": " + id.toString(jsh) + ",\n"
-            + jsh.spaces + "\"right\": " + e.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -407,8 +342,8 @@ class AssignmentExpression extends Expression {
 /// LogicalExpr ///
 ///////////////////
 class LogicalExpression extends Expression {
-    private String operator;
-    private Expression e1, e2;
+    public String operator;
+    public Expression e1, e2;
 
     LogicalExpression(String _operator, Expression _e1, Expression _e2) throws ParseException {
         operator = _operator;
@@ -430,13 +365,8 @@ class LogicalExpression extends Expression {
         return Type.INVALID;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"LogicalExpression\",\n"
-            + jsh.spaces + "\"operator\": \"" + operator + "\",\n"
-            + jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
-            + jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -444,8 +374,8 @@ class LogicalExpression extends Expression {
 /// BinaryExpr ///
 //////////////////
 class BinaryExpression extends Expression {
-    private String operator;
-    private Expression e1, e2;
+    public String operator;
+    public Expression e1, e2;
 
     BinaryExpression(String _operator, Expression _e1, Expression _e2) throws ParseException {
         operator = _operator;
@@ -478,13 +408,8 @@ class BinaryExpression extends Expression {
         }
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"BinaryExpression\",\n"
-            + jsh.spaces + "\"operator\": \"" + operator + "\",\n"
-            + jsh.spaces + "\"left\": " + e1.toString(jsh) + ",\n"
-            + jsh.spaces + "\"right\": " + e2.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -492,8 +417,8 @@ class BinaryExpression extends Expression {
 ///  UnaryExpr ///
 //////////////////
 class UnaryExpression extends Expression {
-    private String operator;
-    private Expression e;
+    public String operator;
+    public Expression e;
 
     UnaryExpression(String _operator, Expression _e) throws ParseException {
         operator = _operator;
@@ -518,12 +443,8 @@ class UnaryExpression extends Expression {
         }
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"UnaryExpression\",\n"
-            + jsh.spaces + "\"operator\": \"" + operator + "\",\n"
-            + jsh.spaces + "\"argument\": " + e.toString(jsh) + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -531,8 +452,8 @@ class UnaryExpression extends Expression {
 ///  CallExpr  ///
 //////////////////
 class CallExpression extends Expression {
-    Identifier calee;
-    ArrayList<Identifier> arguments;
+    public Identifier calee;
+    public ArrayList<Identifier> arguments;
 
     public CallExpression(Identifier _calee, ArrayList<Identifier> _arguments) throws ParseException {
         calee = _calee;
@@ -559,22 +480,8 @@ class CallExpression extends Expression {
         return true; // does not make any sens but use to onvalidated LogicalExpression
     }
 
-    public String toString(JsonShowHelper jsh) {
-        String str = "{\n"
-            + jsh.increase() + "\"type\": \"CallExpression\",\n"
-            + jsh.spaces + "\"calee\": " + calee.toString(jsh) + ",\n"
-            + jsh.spaces + "\"arguments\": [\n";
-
-        jsh.increase();
-        for (Identifier arg : arguments) {
-            str += jsh.spaces + arg.toString(jsh);
-            if (arg != arguments.get(arguments.size() - 1))
-                str += ",";
-            str += "\n";
-        }
-        return str
-            + jsh.decrease() + "]\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -599,7 +506,7 @@ class Identifier extends Expression {
     }
 
     public void updateSymbol() {
-        s = SymbolTracker.getInstance().getSymbol(id.toString());
+        s = SymbolTracker.getInstance().getSymbol(id.image);
     }
 
     public void updateSymbol(Symbol _s) {
@@ -620,11 +527,8 @@ class Identifier extends Expression {
         return s.type;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"Identifier\",\n"
-            + jsh.spaces + "\"name\": \"" + id + "\"\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -651,11 +555,8 @@ class Number extends Literal {
         return Type.INTEGER;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"Literal\",\n"
-            + jsh.spaces + "\"value\": " + value + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }
 
@@ -673,10 +574,7 @@ class Bool extends Literal {
         return Type.BOOLEAN;
     }
 
-    public String toString(JsonShowHelper jsh) {
-        return "{\n"
-            + jsh.increase() + "\"type\": \"Literal\",\n"
-            + jsh.spaces + "\"value\": " + value + "\n"
-            + jsh.decrease() + "}";
+    public Object accept(ASTVisitor v, Object data) {
+        return v.accept(this, data);
     }
 }

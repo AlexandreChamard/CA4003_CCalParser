@@ -72,7 +72,7 @@ public class CcalAstGenerator {
                 return; // avoid error msg
         }
         try {
-            Showable e;
+            ASTNode e;
             switch (mod) {
                 case "Program":
                     e = parser.Program();
@@ -90,7 +90,7 @@ public class CcalAstGenerator {
                     invalidArgument("invalid debug mod.");
                     return; // avoid error msg
             }
-            System.out.println(e.toString(new JsonShowHelper()));
+            System.out.println(e.accept(new JsonVisitor(), null));
             System.out.println("Syntax is okay");
         } catch (Throwable e) {
             System.out.println("Syntax check failed: " + e.getMessage());
