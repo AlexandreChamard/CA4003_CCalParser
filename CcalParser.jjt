@@ -42,12 +42,18 @@ public class CcalParser {
         System.exit(2);
     }
 
+    public static SymbolTracker st = SymbolTracker.getInstance();
+    public static boolean errorState = false;
+
     public static void main(String[] args) throws ParseException, FileNotFoundException {
         if (args.length < 1) {
             System.out.println("Please pass in the filename.");
             System.exit(1);
         }
         CcalParser parser = new CcalParser(new FileInputStream(args[0]));
+        if (parser.errorState == true) {
+            return;
+        }
         SimpleNode root = parser.program();
         System.out.println();
         System.out.println("Program:");
@@ -113,9 +119,27 @@ TOKEN: {
 |   <IDENTIFIER: ["a"-"z"] (["a"-"z"] | ["0"-"9"] | "_")*>
 }
 
-SimpleNode program() : {}
+SimpleNode program() : {
+    st.newBlock();
+}
 {
-    Stms() <EOF> {return jjtThis;}
+    DeclList()
+    FunctionList()
+    MainFunc()
+    <EOF> { st.deleteBlock(); return jjtThis; }
+}
+
+void DeclList(): #void {}
+{
+    Decl() ";" [DeclList() #Stms(2)]
+}
+
+void Decl(): #void {
+    String id, t;
+}
+{
+    "var" id = <IDENTIFIER> ":" t = <VAR_TYPE> { st.addSymbol(new Symbol(id.image, t.image)); } #Decl()
+|    "const" id = <IDENTIFIER> ":" t = <VAR_TYPE> "=" PExpression() { return new VariableDeclaration(id, t, e); }
 }
 
 void Stms() #void : {}

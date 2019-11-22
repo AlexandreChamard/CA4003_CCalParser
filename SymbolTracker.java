@@ -1,6 +1,54 @@
 
 import java.util.*;
 
+enum Type {
+    INVALID,
+    VOID,
+    INTEGER,
+    BOOLEAN
+}
+
+class Symbol {
+    String name;
+    Type type;
+    ArrayList<Type> complexType;
+    String kind;
+
+    public Symbol(String _name, Type _type, String _kind) {
+        name = _name;
+        type = _type;
+        kind = _kind;
+    }
+
+    public Symbol(String _name, String _type, String _kind) {
+        name = _name;
+        type = Typeable.stringToType(_type);
+        kind = _kind;
+    }
+
+    public Symbol(String _name, String _type, ArrayList<VariableDeclaration> vars, String _kind) throws ParseException {
+        name = _name.toLowerCase();
+        type = Typeable.stringToType(_type);
+        complexType = new ArrayList<Type>();
+        for (VariableDeclaration v : vars) {
+            complexType.add(v.getType());
+        }
+        kind = _kind;
+    }
+
+    public boolean isComplex() {
+        return complexType != null;
+    }
+
+    public String getType() {
+        return Typeable.typeToString(type);
+    }
+
+    public String toString() { // debug
+        return "<"+kind+" "+name+"::"+type+">";
+    }
+}
+
 class SymbolTracker {
     Hashtable<String, LinkedList<Symbol>> symTracker = new Hashtable<String, LinkedList<Symbol>>();
     Stack<String> undoStack = new Stack<String>();
@@ -42,6 +90,8 @@ class SymbolTracker {
                 return s;
             }
         }
+        System.out.println("error: cannot find symbol "+_key);
+        CcalParser.errorState = true;
         return null;
     }
 
