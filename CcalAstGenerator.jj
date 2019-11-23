@@ -29,8 +29,12 @@ public class CcalAstGenerator {
             return 4; // show help
         if (args.length == 1)
             return 3; // default program
+        if (args.length == 1 && args[0].equals("--tac"))
+            return 5; // get input from prompt + use Three Address Code feature
         if (args.length == 2 && args[0].equals("--debug"))
             return 0; // get input from prompt + use debug feature
+        if (args.length == 2 && args[1].equals("--tac"))
+            return 6; // use Three Address Code feature
         if (args.length == 3 && args[1].equals("--debug"))
             return 2; // use debug feature
         return -1; // show help and return 2
@@ -43,6 +47,7 @@ public class CcalAstGenerator {
     }
 
     public static void main(String[] args) {
+        boolean tac = false;
         CcalAstGenerator parser;
         String mod = "Program";
 
@@ -64,6 +69,21 @@ public class CcalAstGenerator {
                     return; // avoid error msg
                 }
                 break;
+            case 5:
+                tac = true;
+                parser = new CcalAstGenerator(System.in);
+                break;
+            case 6:
+                tac = true;
+                try {
+                    parser = new CcalAstGenerator(new java.io.FileInputStream(args[0]));
+                } catch (java.io.FileNotFoundException e) {
+                    System.out.println("SLP Parser: File " + args[0] + " not found.");
+                    System.exit(1);
+                    return; // avoid error msg
+                }
+                break;
+
             case 4: // show help
                 help();
                 return;
@@ -90,8 +110,10 @@ public class CcalAstGenerator {
                     invalidArgument("invalid debug mod.");
                     return; // avoid error msg
             }
-            System.out.println(e.accept(new JsonVisitor(), null));
-            System.out.println("Syntax is okay");
+            if (tac)
+                System.out.println(e.accept(new TACVisitor(), null));
+            else
+                System.out.println(e.accept(new JsonVisitor(), null));
         } catch (Throwable e) {
             System.out.println("Syntax check failed: " + e.getMessage());
             System.exit(1);

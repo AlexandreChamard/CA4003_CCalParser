@@ -1,26 +1,20 @@
 
 /**
-how to declare a var in 3 addr code ?
-var i:int; ??
+how to specify the name of args ? (read only)
  */
-
-class TACNode {
-    public String code;
-}
-
 class TACStm {
-    public String code;
+    public String code = "";
     public String next;
 }
 
 class TACCond {
-    public String code;
+    public String code = "";
     public String _true;
     public String _false;
 }
 
 class TACExpr {
-    public String code;
+    public String code = "";
     public String addr;
 }
 
@@ -44,7 +38,7 @@ public class TACVisitor implements ASTVisitor {
     }
 
     private static String gen(String ... words) {
-        return String.join(" ", words) + "\n";
+        return "\t" + String.join(" ", words) + "\n";
     }
 
     public Object accept(Program node, Object data) {
@@ -52,10 +46,7 @@ public class TACVisitor implements ASTVisitor {
 
         s.next = newLabel();
         node.statements.accept(this, s);
-
-        TACNode p = new TACNode();
-        p.code = s.code + toLabel(s.next);
-        return p;
+        return s.code;
     }
 
     public Object accept(FunctionDeclaration node, Object data) {
@@ -64,9 +55,7 @@ public class TACVisitor implements ASTVisitor {
 
         s1.next = newLabel();
         node.statements.accept(this, s1);
-        s.code = toLabel(node.id.id.image)
-            + s1.code
-            + toLabel(s1.next);
+        s.code = toLabel(node.id.s.name) + s1.code;
         return s;
     }
 
@@ -76,10 +65,7 @@ public class TACVisitor implements ASTVisitor {
 
         s1.next = newLabel();
         node.statements.accept(this, s1);
-        s.code = toLabel("main")
-            + s1.code
-            + toLabel(s1.next)
-            + "return\n";
+        s.code = toLabel("main") + s1.code + gen("return");
         return s;
     }
 
@@ -89,10 +75,7 @@ public class TACVisitor implements ASTVisitor {
         for (Statement statement : node.statements) {
             TACStm s1 = new TACStm();
 
-            if (statement != node.statements.get(node.statements.size()-1))
-                s1.next = newLabel();
-            else
-                s1.next = s.next;
+            s1.next = newLabel();
             statement.accept(this, s1);
             s.code += s1.code + toLabel(s1.next);
         }
@@ -106,7 +89,7 @@ public class TACVisitor implements ASTVisitor {
             TACExpr e = new TACExpr();
 
             node.e.accept(this, e);
-            s.code = e.addr + gen(node.id.id.image, "=", e.addr);
+            s.code = e.code + gen(node.id.s.name, "=", e.addr);
         }
         return s;
     }
@@ -134,7 +117,7 @@ public class TACVisitor implements ASTVisitor {
             node.test.accept(this, b);
             node.consequent.accept(this, s1);
             node.alternate.accept(this, s2);
-            s.code = b.code + toLabel(b._true) + s1.code + gen("goto", s.next) + toLabel(b._false) + s2.code;
+            s.code = b.code + toLabel(b._true) + s1.code + gen("GOTO", s.next) + toLabel(b._false) + s2.code;
         }
         return s;
     }
@@ -186,37 +169,131 @@ public class TACVisitor implements ASTVisitor {
         TACExpr e1 = new TACExpr();
 
         node.e.accept(this, e1);
-        e.code = e1.code + gen(node.id.id.image, "=", e1.addr);
-        e.addr = node.id.id.image;
+        e.code = e1.code + gen(node.id.s.name, "=", e1.addr);
+        e.addr = node.id.s.name;
         return e;
     }
 
     public Object accept(LogicalExpression node, Object data) {
-        return null;
+        TACCond b = (TACCond)data;
+
+        switch (node.operator) {
+            case "&&": {
+                TACCond b1 = new TACCond();
+                TACCond b2 = new TACCond();
+
+                b1._true = newLabel();
+                b2._true = b._true;
+                b1._false = b2._false = b._false;
+                node.e1.accept(this, b1);
+                node.e2.accept(this, b2);
+                b.code = b1.code + toLabel(b1._true) + b2.code;
+                break;
+            }
+
+            case "||": {
+                TACCond b1 = new TACCond();
+                TACCond b2 = new TACCond();
+
+                b1._true = b2._true = b._true;
+                b1._false = b._false;
+                b2._false = newLabel();
+                node.e1.accept(this, b1);
+                node.e2.accept(this, b2);
+                b.code = b1.code + toLabel(b1._false) + b2.code;
+                break;
+            }
+            default:
+                break;
+        }
+        return b;
     }
 
     public Object accept(BinaryExpression node, Object data) {
-        return null;
+        TACExpr e1 = new TACExpr();
+        TACExpr e2 = new TACExpr();
+
+        node.e1.accept(this, e1);
+        node.e2.accept(this, e2);
+        switch (node.operator) {
+            case "<": case "<=": case ">": case ">=": case "==": case "!=":
+                TACCond b = (TACCond)data;
+
+                b.code = e1.code + e2.code + gen("if", e1.addr, node.operator, e2.addr, "goto", b._true) + gen("goto", b._false);
+                return b;
+
+            case "+": case "-":
+                TACExpr e = (TACExpr)data;
+
+                e.addr = newTmp();
+                e.code = e1.code + e2.code + gen(e.addr, "=", e1.addr, node.operator, e2.addr);
+                return e;
+
+            default:
+                return data;
+        }
     }
 
     public Object accept(UnaryExpression node, Object data) {
-        return null;
+        switch (node.operator) {
+            case "~":
+                TACCond b = (TACCond)data;
+                TACCond b1 = new TACCond();
+
+                b1._true = b._false;
+                b1._false = b._true;
+                node.e.accept(this, b1);
+                b.code = b1.code;
+                return b;
+
+            case "-":
+                TACExpr e = (TACExpr)data;
+                TACExpr e1 = new TACExpr();
+
+                node.e.accept(this, e1);
+                e.addr = newTmp();
+                e.code = e1.code + gen(e.addr, "=", node.operator, e1.addr);
+                return e;
+
+            default:
+                return data;
+        }
     }
 
     public Object accept(CallExpression node, Object data) {
-        return null;
+        TACExpr e = (TACExpr)data;
+        String stack = "";
+
+        for (int i = node.arguments.size(); i-- > 0; ) {
+            TACExpr e1 = new TACExpr();
+            node.arguments.get(i).accept(this, e);
+            e.code += e1.code;
+            stack += gen("param", node.arguments.get(i).s.name);
+        }
+        e.addr = newTmp();
+        e.code += stack + gen(e.addr, "=", "call", node.calee.s.name, ",", String.valueOf(node.arguments.size()));
+        return e;
     }
 
     public Object accept(Identifier node, Object data) {
-        return null;
+        TACExpr e = (TACExpr)data;
+
+        e.addr = node.s.name;
+        return e;
     }
 
     public Object accept(Number node, Object data) {
-        return null;
+        TACExpr e = (TACExpr)data;
+
+        e.addr = String.valueOf(node.value);
+        return e;
     }
 
     public Object accept(Bool node, Object data) {
-        return null;
+        TACExpr e = (TACExpr)data;
+
+        e.addr = String.valueOf(node.value);
+        return e;
     }
 
 }

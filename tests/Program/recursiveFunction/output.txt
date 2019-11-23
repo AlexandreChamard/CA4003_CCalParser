@@ -265,4 +265,3 @@
     }
   ]
 }
-Syntax is okay

@@ -38,4 +38,3 @@
     }
   }
 }
-Syntax is okay

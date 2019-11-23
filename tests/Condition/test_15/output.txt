@@ -26,4 +26,3 @@
     }
   }
 }
-Syntax is okay

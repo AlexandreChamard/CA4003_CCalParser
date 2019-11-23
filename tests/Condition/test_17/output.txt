@@ -42,4 +42,3 @@
     }
   }
 }
-Syntax is okay

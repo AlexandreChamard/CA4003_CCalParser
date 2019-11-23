@@ -526,4 +526,3 @@
     }
   ]
 }
-Syntax is okay

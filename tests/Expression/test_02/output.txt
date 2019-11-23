@@ -6,4 +6,3 @@
     "value": 0
   }
 }
-Syntax is okay

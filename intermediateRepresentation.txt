@@ -1,17 +1,17 @@
 ========================
 S -> id = E;
 
-gen(get(id.lexeme) '=' E.addr)
+S.code = gen(get(id.lexeme) '=' E.addr)
 
 ========================
 S -> L = E
 
-gen(L.addr.base '[' L.addr ']' '=' E.addr)
+S.code = gen(L.addr.base '[' L.addr ']' '=' E.addr)
 
 ========================
 E -> E1 op E2
 
-gen(E.addr '=' E1.addr op E2.addr)
+E.code = gen(E.addr '=' E1.addr op E2.addr)
 
 ========================
 E -> id
@@ -22,7 +22,7 @@ E.addr = get(id.lexeme)
 E -> L
 
 E.addr = new Temp()
-gen(E.addr '=' L.array.base '[' L.addr ']')
+E.code = gen(E.addr '=' L.array.base '[' L.addr ']')
 
 ========================
 L -> id[E]
@@ -30,7 +30,7 @@ L -> id[E]
 L.array = get(id.lexeme)
 L.type = L.array.type.elem
 L.addr = new temp()
-gen(L.addr '=' E.addr '*' L.type.width)
+L.code = gen(L.addr '=' E.addr '*' L.type.width)
 
 ========================
 L -> L1[E]
@@ -39,8 +39,7 @@ L.array = L1.array
 L.type = L1.type.elem
 t = new Temp()
 L.addr = new Temp()
-gen(t '=' E.addr '*' L.type.width)
-gen(L.addr '=' L1.addr '+' t)
+L.code = gen(t '=' E.addr '*' L.type.width) || gen(L.addr '=' L1.addr '+' t)
 
 ========================
 B -> B1 || B2
@@ -49,7 +48,7 @@ B1.true = B.true
 B1.false = newlabel()
 B2.true = B.true
 B2.false = B.false
-B1.code || label(B1.false) || B2.code
+B.code = B1.code || label(B1.false) || B2.code
 
 ========================
 B -> B1 && B2
@@ -58,7 +57,7 @@ B1.true = newlabel()
 B1.false = B.false
 B2.true = B.true
 B2.false = B.false
-B1.code || label(B1.true) || B2.code
+B.code = B1.code || label(B1.true) || B2.code
 
 ========================
 B -> !B1
@@ -122,7 +121,7 @@ S -> S1 S2
 
 S1.next = newlabel()
 S2.next = S.next
-S1.code || label(S1.next) || S2.code
+S.code = S1.code || label(S1.next) || S2.code
 
 
 ==============================================
