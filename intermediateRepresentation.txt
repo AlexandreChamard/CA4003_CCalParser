@@ -70,9 +70,7 @@ B.code = B1.code
 ========================
 B -> E1 rel E2
 
-B.code = E1.code || E2.code
-|| gen('if' E1.addr rel E2.addr 'goto' B.true)
-|| gen('goto' B.false)
+B.code = E1.code || E2.code || gen('if' E1.addr rel E2.addr 'goto' B.true) || gen('goto' B.false)
 
 ========================
 B -> true
@@ -97,11 +95,6 @@ S.code = assign.code
 
 ========================
 S -> if ( B ) S1
-
-S.true = newlabel()
-S.false = newlabel()
-B.code || label(S1.true) || S1.code || label(S.false)
-
 
 B.true = newlabel()
 B.false = S1.next = S.next
