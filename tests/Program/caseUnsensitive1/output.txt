@@ -1,3 +1,6 @@
+WARNING: var x:integer (2:5) is never initialised.
+WARNING: var x:integer (2:5) is never used.
+WARNING: var y:integer (5:11) is never used.
 {
   "type": "Program",
   "body": [

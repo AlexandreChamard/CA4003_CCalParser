@@ -1,7 +1,4 @@
 
-/**
-how to specify the name of args ? (read only)
- */
 class TACStm {
     public String code = "";
     public String next;

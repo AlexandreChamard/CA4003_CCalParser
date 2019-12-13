@@ -1,3 +1,4 @@
+WARNING: var result:integer (21:7) is never used.
 {
   "type": "Program",
   "body": [

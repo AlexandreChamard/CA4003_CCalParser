@@ -4,6 +4,7 @@ import java.util.*;
 class SymbolTracker {
     Hashtable<String, LinkedList<Symbol>> symTracker = new Hashtable<String, LinkedList<Symbol>>();
     Stack<String> undoStack = new Stack<String>();
+    public Vector<Symbol> symbols = new Vector<Symbol>();
 
     private static SymbolTracker st;
 
@@ -25,6 +26,7 @@ class SymbolTracker {
         }
         undoStack.push(s.name);
         l.push(s);
+        symbols.add(s);
     }
 
     public Symbol getSymbol(String _key) {
@@ -88,27 +90,23 @@ class SymbolTracker {
         return s.toString();
     }
 
-    public static void main(String[] args) { // SymbolTracker example
-        SymbolTracker st = new SymbolTracker();
+    public boolean verifyUsages() {
+        boolean v = true;
 
-        st.newBlock();
-        st.addSymbol(new Symbol("a", "int", "var"));
-        st.addSymbol(new Symbol("b", "bool", "var"));
-
-        System.out.println("a: "+symbolToString(st.getSymbol("a")));
-        System.out.println("b: "+symbolToString(st.getSymbol("b")));
-
-        st.newBlock();
-
-        st.addSymbol(new Symbol("a", "String", "var"));
-
-        System.out.println("a: "+symbolToString(st.getSymbol("a")));
-        System.out.println("b: "+symbolToString(st.getSymbol("b")));
-
-        st.deleteBlock();
-        System.out.println("a: "+symbolToString(st.getSymbol("a")));
-        System.out.println("b: "+symbolToString(st.getSymbol("b")));
-
-        st.deleteBlock();
+        for (Symbol s : symbols) {
+            if (s.isWrite == false) {
+                System.out.println("WARNING: var "+s.name+":"+Typeable.typeToString(s.type)+" ("+s.tok.beginLine+":"+s.tok.beginColumn+") is never initialised.");
+                v = false;
+            }
+            if (s.isRead == false) {
+                if (s.complexType == null)
+                    System.out.println("WARNING: var "+s.name+":"+Typeable.typeToString(s.type)+" ("+s.tok.beginLine+":"+s.tok.beginColumn+") is never used.");
+                else
+                    System.out.println("WARNING: function "+s.name+" ("+s.tok.beginLine+":"+s.tok.beginColumn+") is never called.");
+                v = false;
+            }
+        }
+        return v;
     }
+
 }

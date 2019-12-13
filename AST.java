@@ -43,25 +43,31 @@ interface Typeable {
 }
 
 class Symbol {
+    public Token tok;
     public String name;
     public Type type;
     public ArrayList<Type> complexType;
     public String kind;
+    public boolean isRead = false;
+    public boolean isWrite = false;
 
-    public Symbol(String _name, Type _type, String _kind) {
-        name = _name;
+    public Symbol(Token _tok, Type _type, String _kind) {
+        tok = _tok;
+        name = tok.image;
         type = _type;
         kind = _kind;
     }
 
-    public Symbol(String _name, String _type, String _kind) {
-        name = _name;
+    public Symbol(Token _tok, String _type, String _kind) {
+        tok = _tok;
+        name = tok.image;
         type = Typeable.stringToType(_type);
         kind = _kind;
     }
 
-    public Symbol(String _name, String _type, ArrayList<VariableDeclaration> vars, String _kind) throws ParseException {
-        name = _name.toLowerCase();
+    public Symbol(Token _tok, String _type, ArrayList<VariableDeclaration> vars, String _kind) throws ParseException {
+        tok = _tok;
+        name = tok.image;
         type = Typeable.stringToType(_type);
         complexType = new ArrayList<Type>();
         for (VariableDeclaration v : vars) {
@@ -118,6 +124,7 @@ class FunctionDeclaration extends Statement {
     public StatementBlock statements;
 
     public FunctionDeclaration(Token _id, Symbol s, ArrayList<VariableDeclaration> _params, StatementBlock _statements) throws ParseException {
+        s.isWrite = true;
         id = new Identifier(_id);
         params = _params;
         statements = _statements;
@@ -189,18 +196,26 @@ class VariableDeclaration extends Statement {
     public Expression e;
 
     public VariableDeclaration(Token _id, Token type, Expression _e) {
-        Symbol s = initSymbol(_id.image, type.image, "const");
+        Symbol s = initSymbol(_id, type.image, "const");
         id = new Identifier(_id, s);
+        s.isWrite = true;
         e = _e;
     }
 
     public VariableDeclaration(Token _id, Token type) {
-        Symbol s = initSymbol(_id.image, type.image, "var");
+        Symbol s = initSymbol(_id, type.image, "var");
         id = new Identifier(_id, s);
     }
 
-    Symbol initSymbol(String name, String type, String kind) {
-        Symbol s = new Symbol(name, type, kind);
+    public VariableDeclaration(Token _id, Token type, boolean isRead, boolean isWrite) {
+        Symbol s = initSymbol(_id, type.image, "var");
+        s.isRead = isRead;
+        s.isWrite = isWrite;
+        id = new Identifier(_id, s);
+    }
+
+    Symbol initSymbol(Token tok, String type, String kind) {
+        Symbol s = new Symbol(tok, type, kind);
         SymbolTracker.getInstance().addSymbol(s);
 
         return s;
@@ -271,6 +286,7 @@ class ReturnStatement extends Statement {
 
     public ReturnStatement(Expression _argument) {
         argument = _argument;
+        argument.setRead();
     }
 
     public Object accept(ASTVisitor v, Object data) {
@@ -305,6 +321,7 @@ abstract class Expression extends ASTNode implements Typeable {
 
     public boolean isLiteral() { return false; }
     public boolean isLogical() { return false; }
+    public void setRead() {}
 
     public void checkValidity() throws ParseException {
         if (getType() == Type.INVALID)
@@ -321,7 +338,9 @@ class AssignmentExpression extends Expression {
 
     AssignmentExpression(Identifier _id, Expression _e) throws ParseException {
         id = _id;
+        id.s.isWrite = true;
         e = _e;
+        e.setRead();
         checkValidity();
     }
 
@@ -349,6 +368,8 @@ class LogicalExpression extends Expression {
         operator = _operator;
         e1 = _e1;
         e2 = _e2;
+        e1.setRead();
+        e1.setRead();
         checkValidity();
     }
 
@@ -381,6 +402,8 @@ class BinaryExpression extends Expression {
         operator = _operator;
         e1 = _e1;
         e2 = _e2;
+        e1.setRead();
+        e2.setRead();
         checkValidity();
     }
 
@@ -423,6 +446,7 @@ class UnaryExpression extends Expression {
     UnaryExpression(String _operator, Expression _e) throws ParseException {
         operator = _operator;
         e = _e;
+        e.setRead();
         checkValidity();
     }
 
@@ -457,12 +481,15 @@ class CallExpression extends Expression {
 
     public CallExpression(Identifier _calee, ArrayList<Identifier> _arguments) throws ParseException {
         calee = _calee;
+        calee.setRead();
+
         arguments = _arguments;
         ArrayList<Type> complexType = new ArrayList<Type>();
-
-        for (Typeable t : arguments) {
-            complexType.add(t.getType());
+        for (Identifier argument : arguments) {
+            complexType.add(argument.getType());
+            argument.setRead();
         }
+
         if (calee.s.isComplex() == false) {
             throw new ParseException(calee.id+" is not a function.");
         }
@@ -519,6 +546,10 @@ class Identifier extends Expression {
 
     public boolean isConst() {
         return s.kind.equals("const") || isFunction();
+    }
+
+    public void setRead() {
+        s.isRead = true;
     }
 
     public Type getType() throws ParseException {

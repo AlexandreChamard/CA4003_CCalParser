@@ -110,6 +110,7 @@ public class CcalAstGenerator {
                     invalidArgument("invalid debug mod.");
                     return; // avoid error msg
             }
+            SymbolTracker.getInstance().verifyUsages();
             if (tac)
                 System.out.println(e.accept(new TACVisitor(), null));
             else
@@ -271,7 +272,7 @@ FunctionDeclaration Function(): {
 }
 {
     t = <VAR_TYPE> id = <IDENTIFIER> "(" ps = ParamList() ")"
-    { s = new Symbol(id.toString(), t.toString(), ps, "function"); st.addSymbol(s); } // create the symbol of the function for recursive call.
+    { s = new Symbol(id, t.toString(), ps, "function"); st.addSymbol(s); } // create the symbol of the function for recursive call.
     "{" 
         dl = DeclList()
         sb = StatementBlock()
@@ -281,18 +282,20 @@ FunctionDeclaration Function(): {
             throw new ParseException("return type does not match with function type.");
         dl.addBack(sb);
         dl.addBack(new ReturnStatement(r));
+        st.symbols.removeElement(s);
         st.deleteBlock(); // because the function symbol was create IN the block, we need to push it again (next line).
         return new FunctionDeclaration(id, s, ps, dl);
     }
 
 |   "void" id = <IDENTIFIER> "(" ps = ParamList() ")"
-    { s = new Symbol(id.toString(), "void", ps, "function"); st.addSymbol(s); } // create the symbol of the function for recursive call.
+    { s = new Symbol(id, "void", ps, "function"); st.addSymbol(s); } // create the symbol of the function for recursive call.
     "{"
         dl = DeclList()
         sb = StatementBlock()
         "return" "(" ")" ";"
     "}" {
         dl.addBack(sb);
+        st.symbols.removeElement(s);
         st.deleteBlock(); // because the function symbol was create IN the block, we need to push it again (next line).
         return new FunctionDeclaration(id, s, ps, dl);
     }
@@ -338,7 +341,10 @@ ArrayList<VariableDeclaration> NempParameterList(): {
     ArrayList<VariableDeclaration> ps;
 }
 {
-    id = <IDENTIFIER> ":" t = <VAR_TYPE> ps = NempParameterList1() { ps.add(0, new VariableDeclaration(id, t)); return ps; }
+    id = <IDENTIFIER> ":" t = <VAR_TYPE> ps = NempParameterList1() {
+        ps.add(0, new VariableDeclaration(id, t, false, true));
+        return ps;
+    }
 }
 
 /**

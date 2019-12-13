@@ -1,0 +1,24 @@
+WARNING: function bla (1:6) is never called.
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "id": {
+        "type": "Identifier",
+        "name": "bla"
+      },
+      "return_type": "void",
+      "params": [
+      ],
+      "body": [
+      ]
+    },
+    {
+      "type": "FunctionDeclaration",
+      "name": "main",
+      "body": [
+      ]
+    }
+  ]
+}
