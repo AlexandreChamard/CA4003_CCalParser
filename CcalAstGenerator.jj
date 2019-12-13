@@ -12,6 +12,21 @@ import java.util.ArrayList;
 ///    MAIN    ///
 //////////////////
 public class CcalAstGenerator {
+    public static boolean hasFail = false;
+
+    static void manageError(String next) {
+        hasFail = true;
+
+        String actualToken = CcalAstGeneratorTokenManager.jjstrLiteralImages[CcalAstGeneratorTokenManager.jjmatchedKind];
+        if (actualToken == next)
+            return;
+
+        Token t;
+        do {
+        t = getNextToken();
+        } while (t.image != next);
+    }
+
     static void help() {
             System.out.println("");
             System.out.println("USAGE:");
@@ -111,6 +126,8 @@ public class CcalAstGenerator {
                     return; // avoid error msg
             }
             SymbolTracker.getInstance().verifyUsages();
+            if (hasFail == true)
+                return;
             if (tac)
                 System.out.println(e.accept(new TACVisitor(), null));
             else
@@ -387,11 +404,17 @@ Statement Statement(): {
     Statement s;
 }
 {
+    try {
     id = <IDENTIFIER> s = Statement1(new Identifier(id))    { return s; }
 |   "{" s = StatementBlock() "}"                            { return s; }
 |   s = IfStatement()                                       { return s; }
 |   s = WhileStatement()                                    { return s; }
 |   "skip" ";"                                              { return new SkipStatement(); }
+    } catch (ParseException e) {
+        System.out.println(e.toString());
+        manageError(";");
+        return new SkipStatement();
+    }
 }
 
 /**
@@ -410,7 +433,7 @@ Statement Statement1(Identifier id): {
 /**
 <if_statement> ::= if <condition> { <statement_block } else { <statement_block> }
  */
-IfStatement IfStatement(): {
+Statement IfStatement(): {
     Expression c;
     StatementBlock sb, sb1;
 
@@ -418,13 +441,19 @@ IfStatement IfStatement(): {
     st.newBlock();
 }
 {
+    try {
     "if" c = PCondition() "{" sb = StatementBlock() "}" "else" "{" sb1 = StatementBlock() "}"    { st.deleteBlock(); return new IfStatement(c, sb, sb1); }
+    } catch (ParseException e) {
+        System.out.println(e.toString());
+        manageError(";");
+        return new SkipStatement();
+    }
 }
 
 /**
 <while_statement> ::= while <condition> { <statement_block> }
  */
-WhileStatement WhileStatement(): {
+Statement WhileStatement(): {
     Expression c;
     StatementBlock sb;
 
@@ -432,7 +461,17 @@ WhileStatement WhileStatement(): {
     st.newBlock();
 }
 {
+    try {
     "while" c = PCondition() "{" sb = StatementBlock() "}"  { st.deleteBlock(); return new WhileStatement(c, sb); }
+    } catch (ParseException e) {
+        System.out.println(e.toString());
+        hasFail = true;
+        Token t;
+        do {
+        t = getNextToken();
+        } while (t.image != ";");
+        return new SkipStatement();
+    }
 }
 
 /**

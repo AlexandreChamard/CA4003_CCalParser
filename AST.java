@@ -338,6 +338,8 @@ class AssignmentExpression extends Expression {
 
     AssignmentExpression(Identifier _id, Expression _e) throws ParseException {
         id = _id;
+        if (id.s.kind != "var")
+            throw new ParseException("identifier "+id.s.name+" ("+id.s.tok.beginLine+":"+id.s.tok.beginColumn+") is not modifiable.");
         id.s.isWrite = true;
         e = _e;
         e.setRead();
