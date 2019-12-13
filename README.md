@@ -1,11 +1,12 @@
 # CCalParser
 CCal parser with JavaCC
 
-USAGE:  
-	java CcalAstGenerator [inputfile.ccal] [--debug [Program | Condition | Expression | Identifier]]
+USAGE:
+	java CcalAstGenerator [-h | [inputfile.ccal] [--tac | --debug [Program | Condition | Expression | Identifier]]]
 
-  -h --help:	show help.  
-  --debug:	parse only the given type.  
+  -h --help:	show help.
+  --tac:	show the Three Adress Code representation of the program.
+  --debug:	parse only the given type.
 
 ## What it does
 
