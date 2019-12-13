@@ -30,9 +30,10 @@ public class CcalAstGenerator {
     static void help() {
             System.out.println("");
             System.out.println("USAGE:");
-            System.out.println("\tjava CcalAstGenerator [inputfile.ccal] [--debug [Program | Condition | Expression | Identifier]]");
+            System.out.println("\tjava CcalAstGenerator [-h | [inputfile.ccal] [--tac | --debug [Program | Condition | Expression | Identifier] ] ]");
             System.out.println("");
             System.out.println("  -h --help:\tshow help.");
+            System.out.println("  --tac:\tshow the Three Adress Code representation of the program.");
             System.out.println("  --debug:\tparse only the given type.");
             System.out.println("");
     }
